@@ -133,10 +133,24 @@ services:
     networks:
       - sure_net
 
+  rotki:
+    image: rotki/rotki:latest
+    container_name: sure-rotki
+    ports:
+      - "5042:5042"
+    volumes:
+      - rotki-data:/data
+    environment:
+      - ROTKI_IS_HEADLESS=true
+    restart: unless-stopped
+    networks:
+      - sure_net
+
 volumes:
   app-storage:
   postgres-data:
   redis-data:
+  rotki-data:
 
 networks:
   sure_net:

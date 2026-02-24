@@ -1,0 +1,15 @@
+services:
+  rotki:
+    image: rotki/rotki:latest
+    container_name: sure-rotki
+    ports:
+      - "5042:5042"
+    volumes:
+      - rotki-data:/data
+    environment:
+      - ROTKI_IS_HEADLESS=true
+      - API_UPLOAD_BACKEND_HOST=0.0.0.0
+    restart: unless-stopped
+
+volumes:
+  rotki-data:
