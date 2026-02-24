@@ -1,0 +1,17 @@
+<%= render DS::Dialog.new do |dialog| %>
+  <% dialog.with_header(title: t(".title")) %>
+  <% dialog.with_body do %>
+    <%= styled_form_with model: @account, url: rotki_accounts_path, local: true do |form| %>
+      <div class="space-y-4">
+        <%= form.text_field :name,
+                            label: t(".name_label"),
+                            placeholder: t(".name_placeholder"),
+                            required: true %>
+
+        <div class="flex justify-end gap-2">
+          <%= form.submit t(".submit"), class: "btn btn-primary" %>
+        </div>
+      </div>
+    <% end %>
+  <% end %>
+<% end %>

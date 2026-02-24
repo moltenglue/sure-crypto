@@ -177,6 +177,10 @@ Rails.application.routes.draw do
     resource :guides, only: :show
     resource :bank_sync, only: :show, controller: "bank_sync"
     resource :providers, only: %i[show update]
+    resource :rotki, only: [] do
+      post :connect, on: :collection
+      post :disconnect, on: :collection
+    end
   end
 
   resource :subscription, only: %i[new show create] do
@@ -353,6 +357,7 @@ Rails.application.routes.draw do
   resources :credit_cards, only: %i[new create edit update]
   resources :loans, only: %i[new create edit update]
   resources :cryptos, only: %i[new create edit update]
+  resources :rotki_accounts, only: %i[new create]
   resources :other_assets, only: %i[new create edit update]
   resources :other_liabilities, only: %i[new create edit update]
 

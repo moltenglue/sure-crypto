@@ -188,3 +188,8 @@ en:
         disconnect_confirm: Are you sure you want to disconnect Rotki? Your crypto balances will no longer sync.
         status_connected: Rotki is connected and syncing your crypto holdings.
         status_not_connected: Not connected. Enter your password above to get started.
+      rotki:
+        success: Successfully connected to Rotki
+        error: "Unable to connect to Rotki: %{message}"
+        disconnect_success: Rotki disconnected successfully
+        disconnect_error: Failed to disconnect Rotki
