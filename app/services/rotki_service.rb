@@ -55,6 +55,8 @@ class RotkiService
     uri = URI.join(BASE_URL, path)
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = uri.scheme == "https"
+    http.open_timeout = 10
+    http.read_timeout = 30
 
     req = case method
           when :get then Net::HTTP::Get.new(uri)
@@ -63,11 +65,16 @@ class RotkiService
           end
 
     req["Content-Type"] = "application/json"
-    req["Authorization"] = "Basic #{Base64.encode64("#{@api_key}:")}" if @api_key
+    req["Authorization"] = "Basic #{Base64.strict_encode64(@api_key)}" if @api_key
 
     req.body = body.to_json if body
 
     response = http.request(req)
+
+    unless response.is_a?(Net::HTTPSuccess)
+      raise "Rotki API error: #{response.code} - #{response.message}"
+    end
+
     JSON.parse(response.body)
   end
 end
