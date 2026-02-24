@@ -29,7 +29,7 @@ module Api
         render json: { status: "connected" }
       rescue RotkiServiceError => e
         Rails.logger.error "RotkiController#connect error: #{e.message}"
-        render_json({ error: "connection_failed", message: "Unable to connect to Rotki. Please check your password." }, status: :unprocessable_entity
+        render_json({ error: "connection_failed", message: "Unable to connect to Rotki. Please check your password." }, status: :unprocessable_entity)
       rescue => e
         Rails.logger.error "RotkiController#connect error: #{e.message}"
         render_json({ error: "connection_failed", message: "An unexpected error occurred" }, status: :internal_server_error)
