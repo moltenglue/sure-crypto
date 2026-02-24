@@ -177,10 +177,12 @@ Rails.application.routes.draw do
     resource :guides, only: :show
     resource :bank_sync, only: :show, controller: "bank_sync"
     resource :providers, only: %i[show update]
-    resource :rotki, only: [], controller: "settings/rotki" do
-      post :connect, on: :collection
-      post :disconnect, on: :collection
-    end
+  end
+
+  # Rotki settings routes (non-resource for simpler path helpers)
+  scope module: :settings do
+    post "settings/rotki/connect", to: "rotki#connect"
+    post "settings/rotki/disconnect", to: "rotki#disconnect"
   end
 
   resource :subscription, only: %i[new show create] do
