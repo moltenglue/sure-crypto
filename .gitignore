@@ -119,3 +119,7 @@ scripts/
 .worktrees/
 .security-key
 logs/security/
+
+# Rotki integration (external dependency)
+vendor/rotki/
+docs/plans/
