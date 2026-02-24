@@ -34,9 +34,9 @@ class Settings::BankSyncController < ApplicationController
       {
         name: "Rotki (beta)",
         description: "Self-hosted crypto portfolio tracker with 80+ exchanges and 30+ blockchains.",
-        path: settings_providers_path,
-        target: nil,
-        rel: nil
+        path: "http://localhost:5042",
+        target: "_blank",
+        rel: "noopener noreferrer"
       }
     ]
   end
