@@ -4,7 +4,11 @@ class Settings::RotkiController < ApplicationController
   layout "settings"
 
   def connect
-    password = params.require(:password)
+    password = params[:password]
+
+    if password.blank?
+      return redirect_to settings_providers_path, alert: t(".error", message: "Password is required")
+    end
 
     begin
       Current.user.authenticate_with_rotki!(password)
