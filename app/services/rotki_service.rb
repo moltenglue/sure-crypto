@@ -1,0 +1,73 @@
+class RotkiService
+  BASE_URL = ENV.fetch("ROTKI_API_URL", "http://localhost:5042")
+
+  def initialize(api_key: nil)
+    @api_key = api_key
+  end
+
+  def create_user(username, password)
+    post("/api/1/users", { name: username, password: password })
+  end
+
+  def login(username, password)
+    post("/api/1/users/#{username}", { password: password, sync_approval: "unknown", resume_from_backup: false })
+  end
+
+  def logout(username)
+    patch("/api/1/users/#{username}", { action: "logout" })
+  end
+
+  def balances
+    get("/api/1/balances")
+  end
+
+  def blockchain_balances
+    get("/api/1/balances/blockchain")
+  end
+
+  def exchange_balances
+    get("/api/1/balances/exchanges")
+  end
+
+  def manual_balances
+    get("/api/1/balances/manual")
+  end
+
+  def periodic_data
+    get("/api/1/periodic")
+  end
+
+  private
+
+  def get(path)
+    request(:get, path)
+  end
+
+  def post(path, body)
+    request(:post, path, body)
+  end
+
+  def patch(path, body)
+    request(:patch, path, body)
+  end
+
+  def request(method, path, body = nil)
+    uri = URI.join(BASE_URL, path)
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = uri.scheme == "https"
+
+    req = case method
+          when :get then Net::HTTP::Get.new(uri)
+          when :post then Net::HTTP::Post.new(uri)
+          when :patch then Net::HTTP::Patch.new(uri)
+          end
+
+    req["Content-Type"] = "application/json"
+    req["Authorization"] = "Basic #{Base64.encode64("#{@api_key}:")}" if @api_key
+
+    req.body = body.to_json if body
+
+    response = http.request(req)
+    JSON.parse(response.body)
+  end
+end
