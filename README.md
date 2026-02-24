@@ -200,9 +200,11 @@ In Portainer UI:
 1. Go to **Stacks** → **Add stack**
 2. Select **Git repository**
 3. Repository URL: `https://github.com/moltenglue/sure-crypto`
-4. Repository reference: `main`
+4. Repository reference: `refs/heads/feature/rotki-integration`
 5. Compose path: `compose.example.yml`
 6. Click **Build** and then **Deploy the stack**
+
+> **Note:** Use `feature/rotki-integration` branch - it contains the Rotki integration
 
 ### 3. Add Rotki
 
