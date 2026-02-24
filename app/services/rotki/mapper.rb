@@ -1,11 +1,13 @@
 module Rotki
   class Mapper
     def map_to_net_worth(balance_entry)
+      return nil if balance_entry.blank?
       asset_symbol, data = balance_entry.first
-      
+      return nil unless data
+
       {
         asset_symbol: asset_symbol,
-        quantity: data["amount"],
+        quantity: data["amount"].to_s,
         converted_value: parse_usd_value(data["usd_value"])
       }
     end
