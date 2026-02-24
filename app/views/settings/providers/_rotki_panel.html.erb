@@ -29,7 +29,7 @@
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <%= button_to disconnect_rotki_path,
+        <%= button_to "/api/v1/rotki/disconnect",
                       method: :post,
                       class: "inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-destructive hover:bg-destructive/10 rounded-lg",
                       data: { turbo_confirm: t("settings.providers.rotki_panel.disconnect_confirm") } do %>
@@ -39,7 +39,7 @@
       </div>
     </div>
   <% else %>
-    <%= styled_form_with url: connect_rotki_path,
+    <%= styled_form_with url: "/api/v1/rotki/connect",
                          method: :post,
                          data: { turbo: true },
                          class: "space-y-3" do |form| %>
