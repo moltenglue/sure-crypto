@@ -394,6 +394,11 @@ Rails.application.routes.draw do
         end
       end
 
+      # Rotki crypto integration
+      post "rotki/connect", to: "rotki#connect"
+      post "rotki/disconnect", to: "rotki#disconnect"
+      get "rotki/balances", to: "rotki#balances"
+
       delete "users/reset", to: "users#reset"
       delete "users/me", to: "users#destroy"
 

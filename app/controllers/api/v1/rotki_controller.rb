@@ -4,7 +4,7 @@ module Api
   module V1
     class RotkiController < Api::V1::BaseController
       before_action :ensure_read_scope, only: [:balances]
-      before_action :ensure_write_scope, only: [:connect]
+      before_action :ensure_write_scope, only: [:connect, :disconnect]
 
       def balances
         balances_data = Rotki::BalanceCache.new.get_balances(current_resource_owner)
@@ -29,10 +29,18 @@ module Api
         render json: { status: "connected" }
       rescue RotkiServiceError => e
         Rails.logger.error "RotkiController#connect error: #{e.message}"
-        render_json({ error: "connection_failed", message: "Unable to connect to Rotki. Please check your password." }, status: :unprocessable_entity)
+        render_json({ error: "connection_failed", message: "Unable to connect to Rotki. Please check your password." }, status: :unprocessable_entity
       rescue => e
         Rails.logger.error "RotkiController#connect error: #{e.message}"
         render_json({ error: "connection_failed", message: "An unexpected error occurred" }, status: :internal_server_error)
+      end
+
+      def disconnect
+        current_resource_owner.update!(rotki_encrypted_password: nil)
+        render json: { status: "disconnected" }
+      rescue => e
+        Rails.logger.error "RotkiController#disconnect error: #{e.message}"
+        render_json({ error: "disconnect_failed", message: "Unable to disconnect from Rotki" }, status: :internal_server_error)
       end
 
       private

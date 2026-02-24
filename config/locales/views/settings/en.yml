@@ -175,3 +175,16 @@ en:
       enable_banking_panel:
         callback_url_instruction: "For the callback URL, use %{callback_url}."
         connection_error: Connection Error
+      rotki_panel:
+        setup_instructions: "To connect Rotki:"
+        step1_html: Start your Rotki container and create an account at <a href="http://localhost:5042" target="_blank" class="text-primary underline">http://localhost:5042</a>
+        step2: Enter your Rotki password below
+        step3: Click Connect to link your Rotki account
+        password_label: Rotki Password
+        password_placeholder: Enter your Rotki password
+        connect_button: Connect Rotki
+        connected: Connected
+        disconnect: Disconnect
+        disconnect_confirm: Are you sure you want to disconnect Rotki? Your crypto balances will no longer sync.
+        status_connected: Rotki is connected and syncing your crypto holdings.
+        status_not_connected: Not connected. Enter your password above to get started.
