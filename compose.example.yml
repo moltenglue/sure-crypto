@@ -27,25 +27,6 @@
 # https://github.com/we-promise/sure/discussions/categories/general
 #
 
-x-db-env: &db_env
-  POSTGRES_USER: ${POSTGRES_USER:-sure_user}
-  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sure_password}
-  POSTGRES_DB: ${POSTGRES_DB:-sure_production}
-
-x-rails-env: &rails_env
-  <<: *db_env
-  SECRET_KEY_BASE: ${SECRET_KEY_BASE:-a7523c3d0ae56415046ad8abae168d71074a79534a7062258f8d1d51ac2f76d3c3bc86d86b6b0b307df30d9a6a90a2066a3fa9e67c5e6f374dbd7dd4e0778e13}
-  SELF_HOSTED: "true"
-  RAILS_FORCE_SSL: "false"
-  RAILS_ASSUME_SSL: "false"
-  DB_HOST: db
-  DB_PORT: 5432
-  REDIS_URL: redis://redis:6379/1
-  # Rotki API URL - required for crypto integration
-  ROTKI_API_URL: ${ROTKI_API_URL:-http://rotki:5042}
-  # NOTE: enabling OpenAI will incur costs when you use AI-related features in the app (chat, rules).  Make sure you have set appropriate spend limits on your account before adding this.
-  OPENAI_ACCESS_TOKEN: ${OPENAI_ACCESS_TOKEN}
-
 services:
   web:
     image: ghcr.io/moltenglue/sure-crypto:latest
@@ -55,7 +36,18 @@ services:
       - ${PORT:-3000}:3000
     restart: unless-stopped
     environment:
-      <<: *rails_env
+      - POSTGRES_USER=${POSTGRES_USER:-sure_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-sure_password}
+      - POSTGRES_DB=${POSTGRES_DB:-sure_production}
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE:-a7523c3d0ae56415046ad8abae168d71074a79534a7062258f8d1d51ac2f76d3c3bc86d86b6b0b307df30d9a6a90a2066a3fa9e67c5e6f374dbd7dd4e0778e13}
+      - SELF_HOSTED=true
+      - RAILS_FORCE_SSL=false
+      - RAILS_ASSUME_SSL=false
+      - DB_HOST=db
+      - DB_PORT=5432
+      - REDIS_URL=redis://redis:6379/1
+      - ROTKI_API_URL=${ROTKI_API_URL:-http://rotki:5042}
+      - OPENAI_ACCESS_TOKEN=${OPENAI_ACCESS_TOKEN}
     depends_on:
       db:
         condition: service_healthy
@@ -82,7 +74,18 @@ services:
       - 8.8.8.8
       - 1.1.1.1
     environment:
-      <<: *rails_env
+      - POSTGRES_USER=${POSTGRES_USER:-sure_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-sure_password}
+      - POSTGRES_DB=${POSTGRES_DB:-sure_production}
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE:-a7523c3d0ae56415046ad8abae168d71074a79534a7062258f8d1d51ac2f76d3c3bc86d86b6b0b307df30d9a6a90a2066a3fa9e67c5e6f374dbd7dd4e0778e13}
+      - SELF_HOSTED=true
+      - RAILS_FORCE_SSL=false
+      - RAILS_ASSUME_SSL=false
+      - DB_HOST=db
+      - DB_PORT=5432
+      - REDIS_URL=redis://redis:6379/1
+      - ROTKI_API_URL=${ROTKI_API_URL:-http://rotki:5042}
+      - OPENAI_ACCESS_TOKEN=${OPENAI_ACCESS_TOKEN}
     networks:
       - sure_net
 
@@ -92,9 +95,11 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     environment:
-      <<: *db_env
+      - POSTGRES_USER=${POSTGRES_USER:-sure_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-sure_password}
+      - POSTGRES_DB=${POSTGRES_DB:-sure_production}
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB" ]
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
       interval: 5s
       timeout: 5s
       retries: 5
