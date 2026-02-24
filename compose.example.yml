@@ -144,16 +144,14 @@ services:
     image: rotki/rotki:latest
     container_name: sure-rotki
     ports:
-      - "5042:4242"
+      - "5042:80"
     volumes:
       - rotki-data:/data
     environment:
       - ROTKI_IS_HEADLESS=true
-      - API_UPLOAD_BACKEND_HOST=0.0.0.0
-      - ROTKI_PORT=4242
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD-SHELL", "curl -f http://localhost:4242/api/1/ || exit 1" ]
+      test: [ "CMD-SHELL", "curl -f http://localhost/api/1/ping || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 5
