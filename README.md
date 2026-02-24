@@ -1,115 +1,247 @@
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/we-promise/sure)
-[![View performance data on Skylight](https://badges.skylight.io/typical/s6PEZSKwcklL.svg)](https://oss.skylight.io/app/applications/s6PEZSKwcklL)
-[![Dosu](https://raw.githubusercontent.com/dosu-ai/assets/main/dosu-badge.svg)](https://app.dosu.dev/a72bdcfd-15f5-4edc-bd85-ea0daa6c3adc/ask)
-
-<img width="1270" height="1140" alt="sure_shot" src="https://github.com/user-attachments/assets/9c6e03cc-3490-40ab-9a68-52e042c51293" />
-
 <p align="center">
-  <!-- Keep these links. Translations will automatically update with the README. -->
-  <a href="https://readme-i18n.com/de/we-promise/sure">Deutsch</a> | 
-  <a href="https://readme-i18n.com/es/we-promise/sure">Español</a> | 
-  <a href="https://readme-i18n.com/fr/we-promise/sure">Français</a> | 
-  <a href="https://readme-i18n.com/ja/we-promise/sure">日本語</a> | 
-  <a href="https://readme-i18n.com/ko/we-promise/sure">한국어</a> | 
-  <a href="https://readme-i18n.com/pt/we-promise/sure">Português</a> | 
-  <a href="https://readme-i18n.com/ru/we-promise/sure">Русский</a> | 
-  <a href="https://readme-i18n.com/zh/we-promise/sure">中文</a>
+  <img src="https://img.shields.io/badge/Ruby-3.4+-ruby.svg" alt="Ruby">
+  <img src="https://img.shields.io/badge/Rails-8.0-rails.svg" alt="Rails">
+  <img src="https://img.shields.io/badge/Docker-Ready-blue.svg" alt="Docker">
+  <img src="https://img.shields.io/badge/License-AGPLv3-green.svg" alt="License">
 </p>
 
-# Sure: The personal finance app for everyone
+# Sure Crypto - Rotki Integration
 
-<b>Get
-involved: [Discord](https://discord.gg/36ZGBsxYEK) • [Website](https://sure.am) • [Issues](https://github.com/we-promise/sure/issues)</b>
+A community fork of [Sure](https://github.com/we-promise/sure) with integrated **Rotki** cryptocurrency portfolio tracking.
 
-> [!IMPORTANT]
-> This repository is a community fork of the now-abandoned Maybe Finance project. <br />
-> Learn more in their [final release](https://github.com/maybe-finance/maybe/releases/tag/v0.6.0) doc.
+> This fork adds native Rotki integration to Sure, giving you a unified view of your entire financial portfolio including crypto holdings.
 
-## Backstory
+## Why Rotki?
 
-The Maybe Finance team spent most of 2021–2022 building a full-featured personal finance and wealth management app. It even included an “Ask an Advisor” feature that connected users with a real CFP/CFA — all included with your subscription.
+**Rotki** is a free, open-source, self-hosted portfolio tracker, accounting, and analytics tool that protects your privacy.
 
-The business end of things didn't work out, and so they stopped developing the app in mid-2023.
+| Feature | Rotki | Typical Paid Tools |
+|---------|-------|-------------------|
+| **Privacy** | 🔒 Self-hosted | ☁️ Cloud-only |
+| **Cost** | 🆓 Free forever | 💰 $50-200+/year |
+| **Exchanges** | 🔗 80+ supported | Varies |
+| **Blockchains** | ⛓️ 30+ supported | Limited |
+| **DeFi** | 📈 Native support | Premium only |
 
-After spending nearly $1 million on development (employees, contractors, data providers, infra, etc.), the team open-sourced the app. Their goal was to let users self-host it for free — and eventually launch a hosted version for a small fee.
+Rotki is the gold standard for self-hosted crypto tracking. By integrating with Sure, you get:
+- **Unified Dashboard** - Crypto + bank accounts + investments in one view
+- **Net Worth Tracking** - Complete financial picture
+- **Privacy First** - Your crypto data stays on your server
 
-They actually did launch that hosted version … briefly.
+---
 
-That also didn’t work out — at least not as a sustainable B2C business — so now here we are: hosting a community-maintained fork to keep the codebase alive and see where this can go next.
+## Quick Start
 
-Join us!
+```bash
+# Clone and start
+git clone https://github.com/moltenglue/sure-crypto.git
+cd sure-crypto
+docker-compose -f compose.example.yml -f compose.rotki.yml up -d
+```
 
-## Hosting Sure
+Visit:
+- **Sure**: http://localhost:3000 (create account)
+- **Rotki**: http://localhost:5042 (create account)
 
-Sure is a fully working personal finance app that can be [self hosted with Docker](docs/hosting/docker.md).
+### Connect Rotki
 
-## Forking and Attribution
+1. Open Sure → Settings → Accounts
+2. Find Rotki in account sources
+3. Enter your Rotki password
+4. Click Connect
 
-This repo is a community fork of the archived Maybe Finance repo.
-You’re free to fork it under the AGPLv3 license — but we’d love it if you stuck around and contributed here instead.
+Your crypto balances now appear in your net worth!
 
-To stay compliant and avoid trademark issues:
+---
 
-- Be sure to include the original [AGPLv3 license](https://github.com/maybe-finance/maybe/blob/main/LICENSE) and clearly state in your README that your fork is based on Maybe Finance but is **not affiliated with or endorsed by** Maybe Finance Inc.
-- "Maybe" is a trademark of Maybe Finance Inc. and therefore, use of it is NOT allowed in forked repositories (or the logo)
+## Architecture
 
-## Performance Issues
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      Sure (Rails)                           │
+│  ┌─────────────────┐    ┌─────────────────────────────┐  │
+│  │ RotkiController │───▶│ Rotki::BalanceCache         │  │
+│  │ (API Endpoints) │    │ (Rails.cache, 5-min TTL)    │  │
+│  └────────┬────────┘    └─────────────┬───────────────┘  │
+│           │                            │                   │
+│           ▼                            ▼                   │
+│  ┌─────────────────┐    ┌─────────────────────────────┐  │
+│  │ Rotki::Mapper   │◀───│ RotkiService               │  │
+│  │ (Transform)     │    │ (HTTP Client)              │  │
+│  └─────────────────┘    └─────────────┬───────────────┘  │
+└────────────────────────────────────────┼──────────────────┘
+                                         │
+                                         ▼
+                              ┌──────────────────────┐
+                              │   Rotki Instance     │
+                              │   (Python Backend)  │
+                              │   • 80+ Exchanges   │
+                              │   • 30+ Blockchains │
+                              │   • DeFi Protocols  │
+                              └──────────────────────┘
+```
 
-With data-heavy apps, inevitably, there are performance issues. We've set up a public dashboard showing the problematic requests seen on the demo site, along with the stacktraces to help debug them.
+### Components
 
-https://www.skylight.io/app/applications/s6PEZSKwcklL/recent/6h/endpoints
+| File | Purpose |
+|------|---------|
+| `app/services/rotki_service.rb` | HTTP client for Rotki API |
+| `app/services/rotki/mapper.rb` | Transform Rotki data → Sure format |
+| `app/services/rotki/balance_cache.rb` | Cache balances (5-min TTL) |
+| `app/controllers/api/v1/rotki_controller.rb` | REST API endpoints |
+| `app/javascript/controllers/rotki_controller.js` | Frontend UI |
 
-Any contributions that help improve performance are very much welcome.
+---
 
-## Local Development Setup
+## Docker Compose
 
-**If you are trying to _self-host_ the app, [read this guide to get started](docs/hosting/docker.md).**
+### Full Configuration
 
-The instructions below are for developers to get started with contributing to the app.
+```yaml
+# compose.yml
+version: '3.8'
 
-### Requirements
+services:
+  db:
+    image: postgres:16-alpine
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: sure
+      POSTGRES_PASSWORD: your_password
+      POSTGRES_DB: sure_production
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sure"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-- See `.ruby-version` file for required Ruby version
-- PostgreSQL >9.3 (latest stable version recommended)
-- Redis > 5.4 (latest stable version recommended)
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis-data:/data
 
-### Getting Started
-```sh
-cd sure
-cp .env.local.example .env.local
+  rotki:
+    image: rotki/rotki:latest
+    container_name: sure-rotki
+    ports:
+      - "5042:5042"
+    volumes:
+      - rotki-data:/data
+    environment:
+      - ROTKI_IS_HEADLESS=true
+      - API_UPLOAD_BACKEND_HOST=0.0.0.0
+    restart: unless-stopped
+
+  web:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - uploads:/rails/storage
+    environment:
+      - RAILS_ENV=production
+      - SECRET_KEY_BASE=your_secret
+      - DATABASE_URL=postgresql://sure:your_password@db:5432/sure_production
+      - REDIS_URL=redis://redis:6379/1
+      - ROTKI_API_URL=http://rotki:5042
+    depends_on:
+      db:
+        condition: service_healthy
+
+  worker:
+    build: .
+    command: bundle exec sidekiq
+    volumes:
+      - uploads:/rails/storage
+    environment:
+      - RAILS_ENV=production
+      - SECRET_KEY_BASE=your_secret
+      - DATABASE_URL=postgresql://sure:your_password@db:5432/sure_production
+      - REDIS_URL=redis://redis:6379/1
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  redis-data:
+  rotki-data:
+  uploads:
+```
+
+### Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `ROTKI_API_URL` | Yes | Rotki API (e.g., `http://rotki:5042`) |
+| `SECRET_KEY_BASE` | Yes | Generate with `rails secret` |
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+
+---
+
+## API
+
+### Endpoints
+
+```
+GET  /api/v1/rotki/balances  # Fetch cached crypto balances (scope: read)
+POST /api/v1/rotki/connect   # Connect Rotki account (scope: write)
+```
+
+### Example Response
+
+```json
+{
+  "net_worth": 15250.50,
+  "balances": {
+    "total": [
+      {"asset_symbol": "ETH", "quantity": "2.5", "converted_value": 7500.00},
+      {"asset_symbol": "BTC", "quantity": "0.1", "converted_value": 6500.00}
+    ],
+    "blockchain": [...],
+    "exchanges": [...]
+  },
+  "cached_at": "2026-02-24T15:30:00Z"
+}
+```
+
+---
+
+## Security
+
+- Rotki password encrypted at rest
+- OAuth scope enforcement (`read`/`write`)
+- XSS protection in frontend
+- HTTPS support when using `https://` URLs
+- API timeouts (10s connect, 30s read)
+
+---
+
+## Development
+
+```bash
+# Setup
 bin/setup
 bin/dev
 
-# Optionally, load demo data
-rake demo_data:default
+# Test
+bin/rails test test/services/rotki/
+bin/rails test test/integration/rotki_integration_test.rb
 ```
 
-Visit http://localhost:3000 to view the app.
+---
 
-If you loaded the optional demo data, log in with these credentials:
+## License
 
-- Email: `user@example.com`
-- Password: `Password1!`
+AGPLv3 - See [LICENSE](./LICENSE).
 
-For further instructions, see guides below.
+A community fork of [Maybe Finance](https://github.com/maybe-finance/maybe)/[Sure](https://github.com/we-promise/sure) with Rotki integration.
 
-### Setup Guides
+---
 
-- [Mac dev setup](https://github.com/we-promise/sure/wiki/Mac-Dev-Setup-Guide)
-- [Linux dev setup](https://github.com/we-promise/sure/wiki/Linux-Dev-Setup-Guide)
-- [Windows dev setup](https://github.com/we-promise/sure/wiki/Windows-Dev-Setup-Guide)
-- Dev containers - visit [this guide](https://code.visualstudio.com/docs/devcontainers/containers)
+## Links
 
-### One-click
-
-[![Run on PikaPods](https://www.pikapods.com/static/run-button.svg)](https://www.pikapods.com/pods?run=sure)
-
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/T_draF?referralCode=CW_fPQ)
-
-
-## License and Trademarks
-
-Maybe and Sure are both distributed under
-an [AGPLv3 license](https://github.com/we-promise/sure/blob/main/LICENSE).
-- "Maybe" is a trademark of Maybe Finance, Inc.
-- "Sure" is not, and refers to this community fork.
+- [Rotki Docs](https://docs.rotki.com)
+- [Rotki Official Site](https://rotki.com)
+- [Issues](https://github.com/moltenglue/sure-crypto/issues)
