@@ -45,10 +45,10 @@ Visit:
 
 ### Connect Rotki
 
-1. Open Sure → Settings → Accounts
-2. Find Rotki in account sources
+1. Open Sure → Settings → **Providers** (or Bank Sync)
+2. Find **Rotki** in the list
 3. Enter your Rotki password
-4. Click Connect
+4. Click **Connect**
 
 Your crypto balances now appear in your net worth!
 
