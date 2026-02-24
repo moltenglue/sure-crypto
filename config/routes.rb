@@ -177,7 +177,7 @@ Rails.application.routes.draw do
     resource :guides, only: :show
     resource :bank_sync, only: :show, controller: "bank_sync"
     resource :providers, only: %i[show update]
-    resource :rotki, only: [] do
+    resource :rotki, only: [], controller: "settings/rotki" do
       post :connect, on: :collection
       post :disconnect, on: :collection
     end
