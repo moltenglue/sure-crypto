@@ -180,6 +180,57 @@ volumes:
 
 ---
 
+## Portainer Deployment
+
+Deploy easily using [Portainer](https://www.portainer.io/) - a web-based container management UI.
+
+### 1. Install Portainer
+
+```bash
+# Quick install
+docker volume create portainer_data
+docker run -d -p 9000:9000 -p 9443:9443 --name portainer --restart=always -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer-ce:latest
+```
+
+Access Portainer at: https://localhost:9443
+
+### 2. Create Stack
+
+In Portainer UI:
+1. Go to **Stacks** → **Add stack**
+2. Select **Git repository**
+3. Repository URL: `https://github.com/moltenglue/sure-crypto`
+4. Repository reference: `main`
+5. Compose path: `compose.example.yml`
+6. Click **Build** and then **Deploy the stack**
+
+### 3. Add Rotki
+
+After deploying, edit the stack and add:
+1. Go to **Stacks** → Your stack → **Edit**
+2. In "Additional files", add: `compose.rotki.yml`
+3. Click **Update stack**
+
+### 4. Environment Variables
+
+In Portainer, set these in the stack editor:
+
+| Variable | Value |
+|----------|-------|
+| `POSTGRES_PASSWORD` | (your secure password) |
+| `SECRET_KEY_BASE` | (generate with `rails secret`) |
+| `ROTKI_API_URL` | `http://rotki:5042` |
+
+### 5. Access
+
+| Service | URL | Port |
+|---------|-----|------|
+| Sure | http://localhost:3000 | 3000 |
+| Rotki | http://localhost:5042 | 5042 |
+| Portainer | https://localhost:9443 | 9443 |
+
+---
+
 ## API
 
 ### Endpoints
