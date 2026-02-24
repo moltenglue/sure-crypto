@@ -421,4 +421,8 @@ class User < ApplicationRecord
     def generate_backup_codes
       8.times.map { SecureRandom.hex(4) }
     end
+
+    def encrypt_rotki_password(password)
+      password
+    end
 end
