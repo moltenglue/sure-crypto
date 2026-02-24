@@ -1,6 +1,10 @@
 class User < ApplicationRecord
   include Encryptable
 
+  encrypts :rotki_password
+
+  after_create_commit :sync_to_rotki
+
   # Allow nil password for SSO-only users (JIT provisioning).
   # Custom validation ensures password is present for non-SSO registration.
   has_secure_password validations: false
@@ -161,6 +165,19 @@ class User < ApplicationRecord
 
   # Attribute to skip password validation during SSO JIT provisioning
   attr_accessor :skip_password_validation
+
+  def sync_to_rotki
+    return unless rotki_password.present?
+
+    RotkiService.new.create_user(email, rotki_password)
+    self.rotki_encrypted_password = rotki_password
+  end
+
+  def authenticate_with_rotki!(password)
+    result = RotkiService.new.login(email, password)
+    self.rotki_encrypted_password = password
+    result
+  end
 
   # Deactivation
   validate :can_deactivate, if: -> { active_changed? && !active }
