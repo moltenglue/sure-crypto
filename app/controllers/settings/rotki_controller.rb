@@ -1,4 +1,6 @@
 class Settings::RotkiController < ApplicationController
+  class RotkiConnectionError < StandardError; end
+
   layout "settings"
 
   def connect
@@ -7,7 +9,7 @@ class Settings::RotkiController < ApplicationController
     begin
       Current.user.authenticate_with_rotki!(password)
       redirect_to settings_providers_path, notice: t(".success")
-    rescue RotkiServiceError => e
+    rescue RotkiConnectionError => e
       Rails.logger.error "Rotki connect error: #{e.message}"
       redirect_to settings_providers_path, alert: t(".error", message: "Unable to connect to Rotki. Please check your password.")
     rescue => e
