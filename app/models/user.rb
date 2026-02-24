@@ -423,7 +423,6 @@ class User < ApplicationRecord
     end
 
     def encrypt_rotki_password(password)
-      RotkiService.new.tap { |s| s.instance_variable_set(:@api_key, password) }
-      encrypt(:rotki_password, password)
+      password
     end
 end
