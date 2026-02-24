@@ -215,13 +215,68 @@ After deploying, edit the stack and add:
 
 ### 4. Environment Variables
 
-In Portainer, set these in the stack editor:
+In Portainer, set these in the stack editor. Use **Advanced Mode** for all variables:
 
-| Variable | Value |
-|----------|-------|
-| `POSTGRES_PASSWORD` | (your secure password) |
-| `SECRET_KEY_BASE` | (generate with `rails secret`) |
-| `ROTKI_API_URL` | `http://rotki:5042` |
+#### PostgreSQL (db)
+| Variable | Default | Required | Description |
+|----------|---------|----------|-------------|
+| `POSTGRES_USER` | `sure_user` | Yes | Database username |
+| `POSTGRES_PASSWORD` | — | Yes | Database password (set your own) |
+| `POSTGRES_DB` | `sure_production` | No | Database name |
+
+#### Redis
+| Variable | Default | Required | Description |
+|----------|---------|----------|-------------|
+| `REDIS_URL` | `redis://redis:6379/1` | No | Redis connection string |
+
+#### Rails Application (web/worker)
+| Variable | Default | Required | Description |
+|----------|---------|----------|-------------|
+| `SECRET_KEY_BASE` | — | **Yes** | Generate with `rails secret` |
+| `RAILS_ENV` | `production` | No | Rails environment |
+| `RAILS_FORCE_SSL` | `false` | No | Force HTTPS |
+| `RAILS_ASSUME_SSL` | `false` | No | Assume HTTPS terminated |
+| `SELF_HOSTED` | `true` | No | Self-hosted mode |
+| `DB_HOST` | `db` | No | Database hostname |
+| `DB_PORT` | `5432` | No | Database port |
+| `PORT` | `3000` | No | Application port |
+
+#### Rotki Integration
+| Variable | Default | Required | Description |
+|----------|---------|----------|-------------|
+| `ROTKI_API_URL` | `http://rotki:5042` | **Yes** | Rotki API endpoint |
+
+#### Optional Features
+| Variable | Default | Required | Description |
+|----------|---------|----------|-------------|
+| `OPENAI_ACCESS_TOKEN` | — | No | OpenAI API key for AI features |
+
+#### Backup Service (optional)
+| Variable | Default | Required | Description |
+|----------|---------|----------|-------------|
+| `POSTGRES_HOST` | `db` | No | Database host for backups |
+| `SCHEDULE` | `@daily` | No | Backup schedule (cron) |
+| `BACKUP_KEEP_DAYS` | `7` | No | Daily backups to keep |
+| `BACKUP_KEEP_WEEKS` | `4` | No | Weekly backups to keep |
+| `BACKUP_KEEP_MONTHS` | `6` | No | Monthly backups to keep |
+
+#### Quick Copy for Portainer
+
+```
+POSTGRES_USER=sure_user
+POSTGRES_PASSWORD=your_secure_password_here
+POSTGRES_DB=sure_production
+SECRET_KEY_BASE=$(rails secret)
+RAILS_ENV=production
+SELF_HOSTED=true
+RAILS_FORCE_SSL=false
+DB_HOST=db
+DB_PORT=5439
+REDIS_URL=redis://redis:6379/1
+ROTKI_API_URL=http://rotki:5042
+PORT=3000
+# OPENAI_ACCESS_TOKEN=  # Optional
+```
 
 ### 5. Access
 
