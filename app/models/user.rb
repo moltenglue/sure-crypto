@@ -175,7 +175,7 @@ class User < ApplicationRecord
 
   def authenticate_with_rotki!(password)
     result = RotkiService.new.login(email, password)
-    encrypt_rotki_password(password)
+    update!(rotki_encrypted_password: encrypt_rotki_password(password))
     result
   end
 
@@ -423,9 +423,7 @@ class User < ApplicationRecord
     end
 
     def encrypt_rotki_password(password)
-      self.rotki_password = password
-      self.rotki_encrypted_password = rotki_password
-      save!
-      password
+      RotkiService.new.tap { |s| s.instance_variable_set(:@api_key, password) }
+      encrypt(:rotki_password, password)
     end
 end
