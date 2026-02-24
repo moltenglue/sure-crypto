@@ -1,3 +1,12 @@
+# ===========================================================================
+# Rotki Integration Compose File
+# ===========================================================================
+#
+# Usage:
+#   docker-compose -f compose.example.yml -f compose.rotki.yml up -d
+#
+# This adds the Rotki service to the standard Sure stack
+
 services:
   rotki:
     image: rotki/rotki:latest
@@ -10,6 +19,8 @@ services:
       - ROTKI_IS_HEADLESS=true
       - API_UPLOAD_BACKEND_HOST=0.0.0.0
     restart: unless-stopped
+    networks:
+      - sure_net
 
 volumes:
   rotki-data:
