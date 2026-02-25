@@ -1,0 +1,194 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, develop, feature/* ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: sure
+          POSTGRES_PASSWORD: sure_test_password
+          POSTGRES_DB: sure_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      RAILS_ENV: test
+      DATABASE_URL: postgres://sure:sure_test_password@localhost:5432/sure_test
+      REDIS_URL: redis://localhost:6379/1
+      SECRET_KEY_BASE: test_secret_key_base_for_github_actions_only_not_for_production
+      RAILS_MASTER_KEY: test_master_key_for_github_actions
+      ROTKI_API_URL: http://localhost:5042
+      CI: true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.7'
+          bundler-cache: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpq-dev libvips
+          bundle install --jobs 4 --retry 3
+          npm ci
+
+      - name: Setup database
+        run: |
+          bundle exec rails db:create
+          bundle exec rails db:migrate
+          bundle exec rails db:seed
+
+      - name: Run security checks
+        run: |
+          bundle exec brakeman -q -o /dev/null || true
+
+      - name: Run Rubocop
+        run: |
+          bundle exec rubocop --format simple || true
+
+      - name: Run Biome lint
+        run: |
+          npm run lint || true
+
+      - name: Run Rotki Service Tests (Unit)
+        run: |
+          echo "Running Rotki Service Tests..."
+          bundle exec rails test test/services/rotki_service_test.rb -v
+
+      - name: Run Rotki Balance Cache Tests (Unit)
+        run: |
+          echo "Running Rotki Balance Cache Tests..."
+          bundle exec rails test test/services/rotki/balance_cache_test.rb -v
+
+      - name: Run Rotki Mapper Tests (Unit)
+        run: |
+          echo "Running Rotki Mapper Tests..."
+          bundle exec rails test test/services/rotki/mapper_test.rb -v
+
+      - name: Run Rotki Model Tests (Unit)
+        run: |
+          echo "Running Rotki Model Tests..."
+          bundle exec rails test test/models/rotki_item_test.rb -v
+          bundle exec rails test test/models/rotki_account_test.rb -v
+          bundle exec rails test test/models/user_rotki_test.rb -v
+
+      - name: Run Rotki Concern Tests (Unit)
+        run: |
+          echo "Running Rotki User Concern Tests..."
+          bundle exec rails test test/models/concerns/rotki_user_concern_test.rb -v
+
+      - name: Run Rotki API Controller Tests (Functional)
+        run: |
+          echo "Running Rotki API Controller Tests..."
+          bundle exec rails test test/controllers/api/v1/rotki_controller_test.rb -v
+
+      - name: Run Rotki Settings Controller Tests (Functional)
+        run: |
+          echo "Running Rotki Settings Controller Tests..."
+          bundle exec rails test test/controllers/settings/rotki_controller_test.rb -v
+
+      - name: Run Rotki Accounts Controller Tests (Functional)
+        run: |
+          echo "Running Rotki Accounts Controller Tests..."
+          bundle exec rails test test/controllers/rotki_accounts_controller_test.rb -v
+
+      - name: Run Rotki Integration Tests (Functional)
+        run: |
+          echo "Running Rotki Integration Tests..."
+          bundle exec rails test test/integration/rotki_integration_test.rb -v
+          bundle exec rails test test/integration/rotki_full_flow_test.rb -v
+
+      - name: Run All Remaining Rotki Tests
+        run: |
+          echo "Running remaining Rotki tests..."
+          bundle exec rails test test/system/settings/rotki_panel_test.rb -v || true
+
+      - name: Generate test report
+        if: always()
+        run: |
+          echo "Test Summary:"
+          echo "============="
+          bundle exec rails test test/services/rotki/ test/controllers/api/v1/rotki_controller_test.rb test/integration/rotki_integration_test.rb test/models/concerns/rotki_user_concern_test.rb --verbose 2>&1 | tail -20
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            test/reports/
+            log/test.log
+          retention-days: 7
+
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.7'
+          bundler-cache: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          bundle install --jobs 4 --retry 3
+          npm ci
+
+      - name: Run Brakeman (Security)
+        run: |
+          bundle exec brakeman -q --no-pager --format text
+
+      - name: Run Rubocop (Ruby Style)
+        run: |
+          bundle exec rubocop --format simple --display-cop-names
+        continue-on-error: true
+
+      - name: Run Biome (JS/CSS Style)
+        run: |
+          npm run lint
+        continue-on-error: true

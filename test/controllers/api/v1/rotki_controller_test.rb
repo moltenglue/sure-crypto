@@ -116,13 +116,17 @@ class Api::V1::RotkiControllerTest < ActionDispatch::IntegrationTest
   private
 
     def create_api_key(user, scopes:)
+      key_value = ApiKey.generate_secure_key
       api_key = ApiKey.create!(
         user: user,
         name: "Test API Key",
         scopes: scopes,
-        source: "test"
+        source: "test",
+        key: key_value
       )
-      api_key.plain_key = api_key.key
+      # Store plain key for headers
+      api_key.instance_variable_set(:@plain_key, key_value)
+      def api_key.plain_key; @plain_key; end
       api_key
     end
 
