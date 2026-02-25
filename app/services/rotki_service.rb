@@ -22,17 +22,9 @@ class RotkiService
     end
     
     response = request(:post, "/api/1/users/#{CGI.escape(username)}", { password: password, sync_approval: "unknown", resume_from_backup: false })
-    Rails.logger.info "RotkiService: Login raw response: #{response.inspect}"
+    Rails.logger.info "RotkiService: Login response: #{response.inspect}"
+    Rails.logger.info "RotkiService: Session cookie after login: #{@cookies["rotki_session"]}"
     
-    if response.is_a?(Hash)
-      if response["success"] && response["result"].is_a?(Hash)
-        @cookies["rotki_session"] = response["result"]["session_token"]
-      elsif response["success"]
-        Rails.logger.info "RotkiService: Login returned success but no session token"
-      end
-    end
-    
-    Rails.logger.info "RotkiService: Session cookie set: #{@cookies["rotki_session"]}"
     { "success" => true }
   rescue => e
     Rails.logger.error "Rotki login error: #{e.message}"
@@ -163,6 +155,15 @@ class RotkiService
     req.body = body.to_json if body
 
     response = http.request(req)
+
+    # Capture session cookie from response headers
+    if response["Set-Cookie"]
+      cookie_header = response["Set-Cookie"]
+      if cookie_header =~ /rotki_session=([^;]+)/
+        @cookies["rotki_session"] = $1
+        Rails.logger.info "RotkiService: Captured session cookie from response"
+      end
+    end
 
     unless response.is_a?(Net::HTTPSuccess)
       Rails.logger.error "Rotki API error response: #{response.code} - #{response.message} - #{response.body}"
