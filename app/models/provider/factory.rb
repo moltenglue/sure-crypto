@@ -63,6 +63,13 @@ class Provider::Factory
       find_adapter_class(provider_type).present?
     end
 
+    # Get the adapter class for a provider type
+    # @param provider_type [String] The provider account class name
+    # @return [Class, nil] The adapter class or nil if not registered
+    def for(provider_type)
+      find_adapter_class(provider_type)
+    end
+
     # Get all registered adapter classes
     # @return [Array<Class>] List of registered adapter classes
     def registered_adapters

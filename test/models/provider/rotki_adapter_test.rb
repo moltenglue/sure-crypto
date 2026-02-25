@@ -65,7 +65,9 @@ class Provider::RotkiAdapterTest < ActiveSupport::TestCase
 
   # provider_name
   test "provider_name returns rotki" do
-    instance = @adapter.new
+    # Create a mock provider account since Base requires one
+    mock_account = OpenStruct.new(account: nil, class: OpenStruct.new(name: "RotkiAccount"))
+    instance = @adapter.new(mock_account)
     assert_equal "rotki", instance.provider_name
   end
 
