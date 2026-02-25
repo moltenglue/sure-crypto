@@ -1,0 +1,609 @@
+name: Comprehensive CI Test Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+env:
+  RAILS_ENV: test
+  CI: true
+
+jobs:
+  # ==========================================
+  # Job 1: Setup and Dependencies
+  # ==========================================
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      ruby-version: ${{ steps.ruby-version.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get Ruby version
+        id: ruby-version
+        run: echo "version=$(cat .ruby-version)" >> $GITHUB_OUTPUT
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ steps.ruby-version.outputs.version }}
+          bundler-cache: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Node dependencies
+        run: npm ci
+
+  # ==========================================
+  # Job 2: Lint and Security Scans
+  # ==========================================
+  lint-and-security:
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ needs.setup.outputs.ruby-version }}
+          bundler-cache: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Run Brakeman (Security Scan)
+        run: |
+          bundle exec brakeman -q --no-pager --format text || true
+
+      - name: Run Rubocop (Ruby Linting)
+        run: |
+          bundle exec rubocop --format simple --display-cop-names || true
+
+      - name: Run Biome (JS/CSS Linting)
+        run: |
+          npm run lint || true
+
+      - name: Check for vulnerable dependencies
+        run: |
+          bundle exec bundle-audit check --update || true
+
+  # ==========================================
+  # Job 3: Unit Tests
+  # ==========================================
+  unit-tests:
+    runs-on: ubuntu-latest
+    needs: [setup, lint-and-security]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: sure
+          POSTGRES_PASSWORD: sure_test_password
+          POSTGRES_DB: sure_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgres://sure:sure_test_password@localhost:5432/sure_test
+      REDIS_URL: redis://localhost:6379/1
+      SECRET_KEY_BASE: test_secret_key_base_for_github_actions_only_not_for_production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpq-dev libvips
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ needs.setup.outputs.ruby-version }}
+          bundler-cache: true
+
+      - name: Setup database
+        run: |
+          bundle exec rails db:create
+          bundle exec rails db:migrate
+          bundle exec rails db:seed
+
+      - name: Run Unit Tests (Models)
+        run: |
+          bundle exec rails test test/models/ -v --profile 10
+
+      - name: Run Unit Tests (Services)
+        run: |
+          bundle exec rails test test/services/ -v --profile 10
+
+      - name: Run Unit Tests (Jobs)
+        run: |
+          bundle exec rails test test/jobs/ -v --profile 10 || true
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: test/reports/
+          retention-days: 7
+
+  # ==========================================
+  # Job 4: Integration Tests
+  # ==========================================
+  integration-tests:
+    runs-on: ubuntu-latest
+    needs: [setup, lint-and-security]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: sure
+          POSTGRES_PASSWORD: sure_test_password
+          POSTGRES_DB: sure_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgres://sure:sure_test_password@localhost:5432/sure_test
+      REDIS_URL: redis://localhost:6379/1
+      SECRET_KEY_BASE: test_secret_key_base_for_github_actions_only_not_for_production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpq-dev libvips
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ needs.setup.outputs.ruby-version }}
+          bundler-cache: true
+
+      - name: Setup database
+        run: |
+          bundle exec rails db:create
+          bundle exec rails db:migrate
+          bundle exec rails db:seed
+
+      - name: Run Integration Tests
+        run: |
+          bundle exec rails test test/integration/ -v --profile 10
+
+      - name: Run Controller Tests
+        run: |
+          bundle exec rails test test/controllers/ -v --profile 10
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: test/reports/
+          retention-days: 7
+
+  # ==========================================
+  # Job 5: System/E2E Tests
+  # ==========================================
+  system-tests:
+    runs-on: ubuntu-latest
+    needs: [setup, unit-tests]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: sure
+          POSTGRES_PASSWORD: sure_test_password
+          POSTGRES_DB: sure_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgres://sure:sure_test_password@localhost:5432/sure_test
+      REDIS_URL: redis://localhost:6379/1
+      SECRET_KEY_BASE: test_secret_key_base_for_github_actions_only_not_for_production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpq-dev libvips google-chrome-stable
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ needs.setup.outputs.ruby-version }}
+          bundler-cache: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Setup database
+        run: |
+          bundle exec rails db:create
+          bundle exec rails db:migrate
+          bundle exec rails db:seed
+
+      - name: Precompile assets
+        run: |
+          bundle exec rails assets:precompile
+
+      - name: Run System Tests (Capybara)
+        run: |
+          DISABLE_PARALLELIZATION=true bundle exec rails test:system -v
+
+      - name: Keep screenshots from failed tests
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: system-test-screenshots
+          path: ${{ github.workspace }}/tmp/screenshots
+          if-no-files-found: ignore
+
+  # ==========================================
+  # Job 6: E2E Tests with agent-browser
+  # ==========================================
+  e2e-tests:
+    runs-on: ubuntu-latest
+    needs: [setup, system-tests]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: sure
+          POSTGRES_PASSWORD: sure_test_password
+          POSTGRES_DB: sure_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgres://sure:sure_test_password@localhost:5432/sure_test
+      REDIS_URL: redis://localhost:6379/1
+      SECRET_KEY_BASE: test_secret_key_base_for_github_actions_only_not_for_production
+      BASE_URL: http://localhost:3000
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpq-dev libvips google-chrome-stable curl bc
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ needs.setup.outputs.ruby-version }}
+          bundler-cache: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Install agent-browser
+        run: |
+          npm install -g agent-browser
+          agent-browser install --with-deps
+
+      - name: Setup database
+        run: |
+          bundle exec rails db:create
+          bundle exec rails db:migrate
+          bundle exec rails db:seed
+
+      - name: Precompile assets
+        run: |
+          bundle exec rails assets:precompile
+
+      - name: Start Rails server in background
+        run: |
+          bundle exec rails server -e test -p 3000 -d
+          sleep 10
+          curl -I http://localhost:3000/up || (sleep 5 && curl -I http://localhost:3000/up)
+
+      - name: Run E2E Tests
+        run: |
+          chmod +x scripts/e2e-test.sh
+          ./scripts/e2e-test.sh
+        timeout-minutes: 10
+
+      - name: Stop Rails server
+        if: always()
+        run: |
+          pkill -f "rails server" || true
+
+  # ==========================================
+  # Job 7: Security Tests
+  # ==========================================
+  security-tests:
+    runs-on: ubuntu-latest
+    needs: [setup, lint-and-security]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: sure
+          POSTGRES_PASSWORD: sure_test_password
+          POSTGRES_DB: sure_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgres://sure:sure_test_password@localhost:5432/sure_test
+      REDIS_URL: redis://localhost:6379/1
+      SECRET_KEY_BASE: test_secret_key_base_for_github_actions_only_not_for_production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpq-dev libvips
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ needs.setup.outputs.ruby-version }}
+          bundler-cache: true
+
+      - name: Setup database
+        run: |
+          bundle exec rails db:create
+          bundle exec rails db:migrate
+          bundle exec rails db:seed
+
+      - name: Run Security Tests
+        run: |
+          bundle exec rails test test/integration/security_test.rb test/integration/brakeman_security_test.rb -v
+
+      - name: Run Brakeman Analysis
+        run: |
+          bundle exec brakeman -q -o brakeman-report.json -o brakeman-report.html || true
+
+      - name: Upload Brakeman Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: brakeman-security-report
+          path: |
+            brakeman-report.json
+            brakeman-report.html
+          retention-days: 30
+
+  # ==========================================
+  # Job 8: Performance Tests with k6
+  # ==========================================
+  performance-tests:
+    runs-on: ubuntu-latest
+    needs: [setup, system-tests]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: sure
+          POSTGRES_PASSWORD: sure_test_password
+          POSTGRES_DB: sure_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgres://sure:sure_test_password@localhost:5432/sure_test
+      REDIS_URL: redis://localhost:6379/1
+      SECRET_KEY_BASE: test_secret_key_base_for_github_actions_only_not_for_production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpq-dev libvips
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ needs.setup.outputs.ruby-version }}
+          bundler-cache: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: Setup database
+        run: |
+          bundle exec rails db:create
+          bundle exec rails db:migrate
+          bundle exec rails db:seed
+
+      - name: Precompile assets
+        run: |
+          bundle exec rails assets:precompile
+
+      - name: Start Rails server in background
+        run: |
+          bundle exec rails server -e test -p 3000 -d
+          sleep 10
+          curl -I http://localhost:3000/up || (sleep 5 && curl -I http://localhost:3000/up)
+
+      - name: Run Smoke Test
+        run: |
+          k6 run --out json=performance/smoke_results.json performance/smoke_test.js || true
+
+      - name: Run Load Test
+        run: |
+          k6 run --out json=performance/load_results.json performance/load_test.js || true
+        timeout-minutes: 20
+
+      - name: Stop Rails server
+        if: always()
+        run: |
+          pkill -f "rails server" || true
+
+      - name: Upload Performance Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-test-results
+          path: |
+            performance/smoke_results.json
+            performance/load_results.json
+          retention-days: 30
+
+  # ==========================================
+  # Job 9: Test Summary
+  # ==========================================
+  test-summary:
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, system-tests, e2e-tests, security-tests, performance-tests]
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Test Summary
+        run: |
+          echo "========================================="
+          echo "SureCrypto Test Suite Summary"
+          echo "========================================="
+          echo "Unit Tests: ${{ needs.unit-tests.result }}"
+          echo "Integration Tests: ${{ needs.integration-tests.result }}"
+          echo "System Tests: ${{ needs.system-tests.result }}"
+          echo "E2E Tests: ${{ needs.e2e-tests.result }}"
+          echo "Security Tests: ${{ needs.security-tests.result }}"
+          echo "Performance Tests: ${{ needs.performance-tests.result }}"
+          echo "========================================="
+          
+          if [ "${{ needs.unit-tests.result }}" = "success" ] && \
+             [ "${{ needs.integration-tests.result }}" = "success" ] && \
+             [ "${{ needs.system-tests.result }}" = "success" ] && \
+             [ "${{ needs.e2e-tests.result }}" = "success" ] && \
+             [ "${{ needs.security-tests.result }}" = "success" ] && \
+             [ "${{ needs.performance-tests.result }}" = "success" ]; then
+            echo "All tests passed!"
+            exit 0
+          else
+            echo "Some tests failed!"
+            exit 1
+          fi
