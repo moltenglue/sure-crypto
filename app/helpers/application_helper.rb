@@ -138,7 +138,7 @@ module ApplicationHelper
       footnotes: true
     )
 
-    sanitize(markdown.render(text), scrubber: Loofah::Rails::HTTPProtocol.scrubber)
+    sanitize(markdown.render(text))
   end
 
   # Generate the callback URL for Enable Banking OAuth (used in views and controller).

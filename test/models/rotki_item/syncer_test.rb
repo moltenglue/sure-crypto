@@ -9,8 +9,8 @@ class RotkiItem::SyncerTest < ActiveSupport::TestCase
       status: "good"
     )
     @sync = @family.syncs.create!(
-      start_date: Date.today - 30.days,
-      end_date: Date.today,
+      window_start_date: Date.today - 30.days,
+      window_end_date: Date.today,
       status: :pending
     )
     @syncer = RotkiItem::Syncer.new(@rotki_item)
@@ -131,8 +131,8 @@ class RotkiItem::SyncerTest < ActiveSupport::TestCase
     @rotki_item.expects(:process_accounts).once
     @rotki_item.expects(:schedule_account_syncs).with(
       parent_sync: @sync,
-      window_start_date: @sync.window_start_date,
-      window_end_date: @sync.window_end_date
+      window_window_start_date: @sync.window_start_date,
+      window_window_end_date: @sync.window_end_date
     ).once
     
     @syncer.perform_sync(@sync)
@@ -306,8 +306,8 @@ class RotkiItem::SyncerTest < ActiveSupport::TestCase
   test "perform_sync handles sync without status_text attribute" do
     # Create a minimal sync object
     minimal_sync = OpenStruct.new(
-      window_start_date: Date.today - 30.days,
-      window_end_date: Date.today,
+      window_window_start_date: Date.today - 30.days,
+      window_window_end_date: Date.today,
       status: :pending
     )
     
@@ -334,7 +334,7 @@ class RotkiItem::SyncerTest < ActiveSupport::TestCase
   end
 
   test "perform_sync handles nil window dates" do
-    @sync.update!(window_start_date: nil, window_end_date: nil)
+    @sync.update!(window_window_start_date: nil, window_window_end_date: nil)
     
     account = @family.accounts.create!(
       name: "Linked",
@@ -359,8 +359,8 @@ class RotkiItem::SyncerTest < ActiveSupport::TestCase
     @rotki_item.expects(:import_latest_rotki_data).returns({ success: true })
     @rotki_item.expects(:schedule_account_syncs).with(
       parent_sync: @sync,
-      window_start_date: nil,
-      window_end_date: nil
+      window_window_start_date: nil,
+      window_window_end_date: nil
     )
     
     @syncer.perform_sync(@sync)
