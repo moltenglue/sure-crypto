@@ -13,6 +13,14 @@ class RotkiService
 
   def login(username, password)
     Rails.logger.info "RotkiService: Attempting login for user: #{username}"
+    
+    # First try to logout any existing session to avoid 409 conflict
+    begin
+      logout(username) if @username
+    rescue => e
+      Rails.logger.info "RotkiService: Could not logout existing session: #{e.message}"
+    end
+    
     response = request(:post, "/api/1/users/#{CGI.escape(username)}", { password: password, sync_approval: "unknown", resume_from_backup: false })
     Rails.logger.info "RotkiService: Login raw response: #{response.inspect}"
     
@@ -20,7 +28,6 @@ class RotkiService
       if response["success"] && response["result"].is_a?(Hash)
         @cookies["rotki_session"] = response["result"]["session_token"]
       elsif response["success"]
-        # User already exists and logged in, try to get session from cookies
         Rails.logger.info "RotkiService: Login returned success but no session token"
       end
     end
@@ -30,7 +37,14 @@ class RotkiService
   rescue => e
     Rails.logger.error "Rotki login error: #{e.message}"
     if e.message.include?("409")
-      Rails.logger.info "RotkiService: 409 Conflict - user may already be logged in"
+      Rails.logger.info "RotkiService: 409 Conflict - trying logout and retry login"
+      # Try one more time after logout
+      begin
+        logout(username)
+        retry
+      rescue => retry_error
+        Rails.logger.error "RotkiService: Retry failed: #{retry_error.message}"
+      end
       { "success" => true, "message" => "User already exists" }
     else
       raise
@@ -47,7 +61,11 @@ class RotkiService
   end
 
   def logout(username)
-    patch("/api/1/users/#{username}", { action: "logout" })
+    Rails.logger.info "RotkiService: Attempting logout for user: #{username}"
+    response = patch("/api/1/users/#{username}", { action: "logout" })
+    Rails.logger.info "RotkiService: Logout response: #{response.inspect}"
+    @cookies["rotki_session"] = nil
+    response
   end
 
   def all_balances
