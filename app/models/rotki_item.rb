@@ -1,5 +1,5 @@
 class RotkiItem < ApplicationRecord
-  include Syncable, Unlinking
+  include Syncable, RotkiItem::Provided, RotkiItem::Unlinking
 
   enum :status, { good: "good", requires_update: "requires_update" }, default: :good
 
