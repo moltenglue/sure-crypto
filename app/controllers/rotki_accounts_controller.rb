@@ -19,7 +19,7 @@ class RotkiAccountsController < ApplicationController
     rotki_item = ensure_rotki_item
 
     if rotki_item.rotki_accounts.empty?
-      return redirect_to accounts_path, alert: "No balances found in Rotki"
+      return redirect_to accounts_path, alert: "No balances found in Rotki. Make sure you have crypto in your Rotki portfolio."
     end
 
     created_accounts = []
@@ -55,6 +55,10 @@ class RotkiAccountsController < ApplicationController
     else
       redirect_to accounts_path, alert: "Failed to create Rotki accounts"
     end
+  rescue => e
+    Rails.logger.error "RotkiAccountsController error: #{e.message}"
+    Rails.logger.error e.backtrace.first(10).join("\n")
+    redirect_to accounts_path, alert: "Error connecting to Rotki: #{e.message}"
   end
 
   private
@@ -73,7 +77,13 @@ class RotkiAccountsController < ApplicationController
       password: Current.user.rotki_encrypted_password
     )
 
-    RotkiItem::Importer.new(rotki_item, rotki_service: rotki_service).import
+    Rails.logger.info "RotkiAccountsController: Fetching balances from Rotki..."
+
+    import_result = RotkiItem::Importer.new(rotki_item, rotki_service: rotki_service).import
+
+    Rails.logger.info "RotkiAccountsController: Import result: #{import_result.inspect}"
+
+    rotki_item.reload
 
     rotki_item
   end
