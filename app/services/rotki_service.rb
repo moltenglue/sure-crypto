@@ -10,7 +10,7 @@ class RotkiService
   end
 
   def login(username, password)
-    post("/api/1/users/#{CGI.escape(username)}", { password: password, sync_approval: "import", resume_from_backup: false })
+    post("/api/1/users/#{CGI.escape(username)}", { password: password, sync_approval: "unknown", resume_from_backup: false })
   rescue => e
     Rails.logger.error "Rotki login error: #{e.message}"
     if e.message.include?("409")
