@@ -10,7 +10,13 @@ class RotkiService
   end
 
   def login(username, password)
-    post("/api/1/users/#{username}", { password: password, sync_approval: "unknown", resume_from_backup: false })
+    post("/api/1/users/#{CGI.escape(username)}", { password: password, sync_approval: "import", resume_from_backup: false })
+  rescue => e
+    if e.message.include?("409")
+      { "success" => true, "message" => "User already exists" }
+    else
+      raise
+    end
   end
 
   def logout(username)
