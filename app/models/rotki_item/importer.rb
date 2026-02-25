@@ -11,6 +11,8 @@ class RotkiItem::Importer
 
     balances = rotki_service.all_balances
 
+    Rails.logger.info "RotkiItem::Importer - Raw balances response: #{balances.inspect}"
+
     rotki_item.upsert_rotki_snapshot!(balances)
 
     accounts_imported = 0

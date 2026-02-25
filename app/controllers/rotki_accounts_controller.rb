@@ -18,6 +18,8 @@ class RotkiAccountsController < ApplicationController
 
     rotki_item = ensure_rotki_item
 
+    Rails.logger.info "RotkiAccountsController: rotki_item.rotki_accounts.count = #{rotki_item.rotki_accounts.count}"
+
     if rotki_item.rotki_accounts.empty?
       return redirect_to accounts_path, alert: "No balances found in Rotki. Make sure you have crypto in your Rotki portfolio."
     end

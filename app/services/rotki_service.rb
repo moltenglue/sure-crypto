@@ -56,15 +56,21 @@ class RotkiService
   end
 
   def blockchain_balances
-    get("/api/1/balances/blockchain")
+    result = get("/api/1/balances/blockchain")
+    Rails.logger.info "Rotki blockchain_balances response: #{result.inspect}"
+    result
   end
 
   def exchange_balances
-    get("/api/1/balances/exchanges")
+    result = get("/api/1/balances/exchanges")
+    Rails.logger.info "Rotki exchange_balances response: #{result.inspect}"
+    result
   end
 
   def manual_balances
-    get("/api/1/balances/manual")
+    result = get("/api/1/balances/manual")
+    Rails.logger.info "Rotki manual_balances response: #{result.inspect}"
+    result
   end
 
   def periodic_data
@@ -74,11 +80,24 @@ class RotkiService
   private
 
   def get(path)
-    request(:get, path)
+    response = request(:get, path)
+    if response.is_a?(Hash)
+      if response.key?("result")
+        return response["result"]
+      elsif response.key?("error")
+        raise "Rotki API error: #{response["error"]}"
+      end
+    end
+    response
   end
 
   def post(path, body)
-    request(:post, path, body)
+    response = request(:post, path, body)
+    if response.is_a?(Hash) && response.key?("result")
+      response["result"]
+    else
+      response
+    end
   end
 
   def patch(path, body)
@@ -101,7 +120,7 @@ class RotkiService
     req["Content-Type"] = "application/json"
 
     if @cookies["rotki_session"]
-      req["Authorization"] = "Basic #{Base64.strict_encode64(@cookies["rotki_session"])}"
+      req["Cookie"] = "rotki_session=#{@cookies["rotki_session"]}"
     end
 
     req.body = body.to_json if body
