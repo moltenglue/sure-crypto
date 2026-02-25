@@ -31,8 +31,7 @@ class RotkiItemTest < ActiveSupport::TestCase
       name: "Crypto Account",
       accountable: Crypto.new(subtype: "ETH"),
       account_provider: AccountProvider.create!(
-        provider_account: rotki_account,
-        provider: "rotki"
+        provider: rotki_account
       )
     )
 
@@ -155,8 +154,7 @@ class RotkiItemTest < ActiveSupport::TestCase
       name: "Crypto",
       accountable: Crypto.new(subtype: "ETH"),
       account_provider: AccountProvider.create!(
-        provider_account: rotki_account,
-        provider: "rotki"
+        provider: rotki_account
       )
     )
 
@@ -178,8 +176,7 @@ class RotkiItemTest < ActiveSupport::TestCase
       name: "Crypto",
       accountable: Crypto.new(subtype: "ETH"),
       account_provider: AccountProvider.create!(
-        provider_account: rotki_account,
-        provider: "rotki"
+        provider: rotki_account
       )
     )
 
@@ -221,8 +218,7 @@ class RotkiItemTest < ActiveSupport::TestCase
       name: "Crypto",
       accountable: Crypto.new(subtype: "ETH"),
       account_provider: AccountProvider.create!(
-        provider_account: rotki_account,
-        provider: "rotki"
+        provider: rotki_account
       )
     )
 

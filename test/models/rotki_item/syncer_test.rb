@@ -94,7 +94,7 @@ class RotkiItem::SyncerTest < ActiveSupport::TestCase
     
     AccountProvider.create!(
       account: account,
-      provider_account: rotki_account
+      provider: rotki_account
     )
     
     @rotki_item.expects(:credentials_configured?).returns(true)
@@ -123,7 +123,7 @@ class RotkiItem::SyncerTest < ActiveSupport::TestCase
     
     AccountProvider.create!(
       account: account,
-      provider_account: rotki_account
+      provider: rotki_account
     )
     
     @rotki_item.expects(:credentials_configured?).returns(true)
@@ -168,7 +168,7 @@ class RotkiItem::SyncerTest < ActiveSupport::TestCase
     
     AccountProvider.create!(
       account: linked_account,
-      provider_account: linked_rotki
+      provider: linked_rotki
     )
     
     # Unlinked account
@@ -276,7 +276,7 @@ class RotkiItem::SyncerTest < ActiveSupport::TestCase
     
     AccountProvider.create!(
       account: account,
-      provider_account: rotki_account
+      provider: rotki_account
     )
     
     status_updates = []
@@ -352,7 +352,7 @@ class RotkiItem::SyncerTest < ActiveSupport::TestCase
     
     AccountProvider.create!(
       account: account,
-      provider_account: rotki_account
+      provider: rotki_account
     )
     
     @rotki_item.expects(:credentials_configured?).returns(true)

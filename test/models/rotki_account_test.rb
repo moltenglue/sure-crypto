@@ -54,8 +54,7 @@ class RotkiAccountTest < ActiveSupport::TestCase
     )
 
     account_provider = AccountProvider.create!(
-      provider_account: rotki_account,
-      provider: "rotki"
+      provider: rotki_account
     )
 
     assert_equal account_provider, rotki_account.account_provider
@@ -69,8 +68,7 @@ class RotkiAccountTest < ActiveSupport::TestCase
     )
 
     account_provider = AccountProvider.create!(
-      provider_account: rotki_account,
-      provider: "rotki"
+      provider: rotki_account
     )
 
     account = @family.accounts.create!(
@@ -90,8 +88,7 @@ class RotkiAccountTest < ActiveSupport::TestCase
     )
 
     account_provider = AccountProvider.create!(
-      provider_account: rotki_account,
-      provider: "rotki"
+      provider: rotki_account
     )
 
     account = @family.accounts.create!(

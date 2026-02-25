@@ -24,6 +24,9 @@ require "mocha/minitest"
 require "aasm/minitest"
 require "webmock/minitest"
 
+# Ensure rails-html-sanitizer is loaded for Loofah::Rails in tests
+require "rails-html-sanitizer"
+
 VCR.configure do |config|
   config.cassette_library_dir = "test/vcr_cassettes"
   config.hook_into :webmock
