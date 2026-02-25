@@ -412,24 +412,23 @@ class User < ApplicationRecord
     def generate_backup_codes
       8.times.map { SecureRandom.hex(4) }
     end
-end
 
-  def encrypt_rotki_password(password)
-    return nil if password.blank?
+    def encrypt_rotki_password(password)
+      return nil if password.blank?
 
-    # Use Rails' encrypted attribute support for secure storage
-    # This leverages the same encryption as other sensitive fields
-    Rails.application.encrypted(password)
-  end
-
-  def decrypt_rotki_password
-    return nil if rotki_encrypted_password.blank?
-
-    begin
-      Rails.application.decrypt(rotki_encrypted_password)
-    rescue ActiveSupport::MessageEncryptor::InvalidMessage
-      Rails.logger.error "Failed to decrypt Rotki password for user #{id}"
-      nil
+      # Use Rails' encrypted attribute support for secure storage
+      # This leverages the same encryption as other sensitive fields
+      Rails.application.encrypted(password)
     end
-  end
+
+    def decrypt_rotki_password
+      return nil if rotki_encrypted_password.blank?
+
+      begin
+        Rails.application.decrypt(rotki_encrypted_password)
+      rescue ActiveSupport::MessageEncryptor::InvalidMessage
+        Rails.logger.error "Failed to decrypt Rotki password for user #{id}"
+        nil
+      end
+    end
 end
