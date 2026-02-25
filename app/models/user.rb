@@ -173,9 +173,12 @@ class User < ApplicationRecord
     self.rotki_encrypted_password = rotki_password
   end
 
-  def authenticate_with_rotki!(password)
-    result = RotkiService.new.login(email, password)
-    update!(rotki_encrypted_password: encrypt_rotki_password(password))
+  def authenticate_with_rotki!(username, password)
+    result = RotkiService.new.login(username, password)
+    update!(
+      rotki_encrypted_password: encrypt_rotki_password(password),
+      rotki_username: username
+    )
     result
   end
 

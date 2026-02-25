@@ -178,8 +178,10 @@ en:
       rotki_panel:
         setup_instructions: "To connect Rotki:"
         step1_html: Start your Rotki container and create an account at <a href="http://localhost:5042" target="_blank" class="text-primary underline">http://localhost:5042</a>
-        step2: Enter your Rotki password below
+        step2: Enter your Rotki username and password below
         step3: Click Connect to link your Rotki account
+        username_label: Rotki Username
+        username_placeholder: Enter your Rotki username
         password_label: Rotki Password
         password_placeholder: Enter your Rotki password
         connect_button: Connect Rotki

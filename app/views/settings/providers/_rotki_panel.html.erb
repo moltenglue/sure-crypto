@@ -43,6 +43,10 @@
                          method: :post,
                          data: { turbo: true },
                          class: "space-y-3" do |form| %>
+      <%= form.text_field :rotki_username,
+                          label: t("settings.providers.rotki_panel.username_label"),
+                          placeholder: t("settings.providers.rotki_panel.username_placeholder") %>
+
       <%= form.text_field :password,
                           label: t("settings.providers.rotki_panel.password_label"),
                           placeholder: t("settings.providers.rotki_panel.password_placeholder"),

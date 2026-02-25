@@ -4,18 +4,23 @@ class Settings::RotkiController < ApplicationController
   layout "settings"
 
   def connect
+    username = params[:rotki_username]
     password = params[:password]
+
+    if username.blank?
+      return redirect_to settings_providers_path, alert: t(".error", message: "Username is required")
+    end
 
     if password.blank?
       return redirect_to settings_providers_path, alert: t(".error", message: "Password is required")
     end
 
     begin
-      Current.user.authenticate_with_rotki!(password)
+      Current.user.authenticate_with_rotki!(username, password)
       redirect_to settings_providers_path, notice: t(".success")
     rescue RotkiConnectionError => e
       Rails.logger.error "Rotki connect error: #{e.message}"
-      redirect_to settings_providers_path, alert: t(".error", message: "Unable to connect to Rotki. Please check your password.")
+      redirect_to settings_providers_path, alert: t(".error", message: "Unable to connect to Rotki. Please check your credentials.")
     rescue => e
       Rails.logger.error "Rotki connect error: #{e.message}"
       redirect_to settings_providers_path, alert: t(".error", message: "An unexpected error occurred")
@@ -23,7 +28,7 @@ class Settings::RotkiController < ApplicationController
   end
 
   def disconnect
-    Current.user.update!(rotki_encrypted_password: nil)
+    Current.user.update!(rotki_encrypted_password: nil, rotki_username: nil)
     redirect_to settings_providers_path, notice: t(".disconnect_success")
   rescue => e
     Rails.logger.error "Rotki disconnect error: #{e.message}"
