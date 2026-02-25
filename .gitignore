@@ -101,7 +101,10 @@ tasks.json
 .taskmaster/reports/
 .taskmaster/state.json
 *.mcp.json
-scripts/
+scripts/*
+!scripts/e2e-test.sh
+!scripts/ci-monitor.sh
+!scripts/auto-fix-tests.sh
 .cursor/mcp.json
 .taskmasterconfig
 .windsurfrules
