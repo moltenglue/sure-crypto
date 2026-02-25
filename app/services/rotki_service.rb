@@ -1,8 +1,10 @@
 class RotkiService
   BASE_URL = ENV.fetch("ROTKI_API_URL", "http://localhost:5042")
 
-  def initialize(api_key: nil)
-    @api_key = api_key
+  def initialize(username: nil, password: nil)
+    @username = username
+    @password = password
+    @cookies = {}
   end
 
   def create_user(username, password)
@@ -10,7 +12,9 @@ class RotkiService
   end
 
   def login(username, password)
-    post("/api/1/users/#{CGI.escape(username)}", { password: password, sync_approval: "unknown", resume_from_backup: false })
+    result = post("/api/1/users/#{CGI.escape(username)}", { password: password, sync_approval: "unknown", resume_from_backup: false })
+    @cookies["rotki_session"] = result["session_token"] if result["success"]
+    result
   rescue => e
     Rails.logger.error "Rotki login error: #{e.message}"
     if e.message.include?("409")
@@ -20,8 +24,31 @@ class RotkiService
     end
   end
 
+  def ensure_logged_in
+    return if @cookies["rotki_session"]
+
+    raise "Rotki username not provided" unless @username
+    raise "Rotki password not provided" unless @password
+
+    login(@username, @password)
+  end
+
   def logout(username)
     patch("/api/1/users/#{username}", { action: "logout" })
+  end
+
+  def all_balances
+    ensure_logged_in
+
+    blockchain = blockchain_balances
+    exchanges = exchange_balances
+    manual = manual_balances
+
+    {
+      blockchain: blockchain,
+      exchanges: exchanges,
+      manual: manual
+    }
   end
 
   def balances
@@ -72,7 +99,10 @@ class RotkiService
           end
 
     req["Content-Type"] = "application/json"
-    req["Authorization"] = "Basic #{Base64.strict_encode64(@api_key)}" if @api_key
+
+    if @cookies["rotki_session"]
+      req["Authorization"] = "Basic #{Base64.strict_encode64(@cookies["rotki_session"])}"
+    end
 
     req.body = body.to_json if body
 

@@ -3,6 +3,10 @@
 module Family::RotkiConnectable
   extend ActiveSupport::Concern
 
+  included do
+    has_many :rotki_items, dependent: :destroy
+  end
+
   # @return [Boolean] Whether the family can connect to Rotki
   def can_connect_rotki?
     true
@@ -10,6 +14,6 @@ module Family::RotkiConnectable
 
   # @return [Boolean] Whether any user in the family has Rotki configured
   def has_rotki_credentials?
-    users.where.not(rotki_encrypted_password: nil).exists?
+    users.where.not(rotki_username: nil, rotki_encrypted_password: nil).exists?
   end
 end

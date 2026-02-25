@@ -1,6 +1,6 @@
 class RotkiAccountsController < ApplicationController
   def new
-    if Current.user.rotki_encrypted_password.present?
+    if Current.user.rotki_username.present? && Current.user.rotki_encrypted_password.present?
       @account = Current.family.accounts.build(
         currency: Current.family.currency,
         accountable: Crypto.new
@@ -12,21 +12,77 @@ class RotkiAccountsController < ApplicationController
   end
 
   def create
-    unless Current.user.rotki_encrypted_password.present?
+    unless Current.user.rotki_username.present? && Current.user.rotki_encrypted_password.present?
       return redirect_to settings_providers_path, alert: t(".rotki_not_configured")
     end
 
-    @account = Current.family.accounts.build(
-      name: params[:account][:name],
-      balance: 0,
-      currency: Current.family.currency,
-      accountable: Crypto.new(subtype: "exchange")
+    rotki_item = ensure_rotki_item
+
+    if rotki_item.rotki_accounts.empty?
+      return redirect_to accounts_path, alert: "No balances found in Rotki"
+    end
+
+    created_accounts = []
+    rotki_item.rotki_accounts.each do |rotki_account|
+      account = Current.family.accounts.find_or_initialize_by(
+        name: rotki_account.name,
+        accountable_type: "Crypto"
+      )
+
+      if account.new_record?
+        account.assign_attributes(
+          balance: rotki_account.current_balance || 0,
+          currency: Current.family.currency,
+          accountable: Crypto.new(subtype: rotki_account.account_type)
+        )
+      end
+
+      if account.save
+        AccountProvider.find_or_create_by!(
+          account: account,
+          provider_account: rotki_account
+        )
+        created_accounts << account
+      else
+        Rails.logger.error "Failed to create account for #{rotki_account.name}: #{account.errors.full_messages.join(', ')}"
+      end
+    end
+
+    if created_accounts.any?
+      rotki_item.process_accounts
+      sync_rotki_accounts(rotki_item)
+      redirect_to accounts_path, notice: "Created #{created_accounts.count} Rotki accounts"
+    else
+      redirect_to accounts_path, alert: "Failed to create Rotki accounts"
+    end
+  end
+
+  private
+
+  def ensure_rotki_item
+    existing = Current.family.rotki_items.active.first
+    return existing if existing
+
+    rotki_item = Current.family.rotki_items.create!(
+      name: "Rotki",
+      status: "good"
     )
 
-    if @account.save
-      redirect_to accounts_path, notice: t(".success")
-    else
-      render :new, status: :unprocessable_entity
+    rotki_service = RotkiService.new(
+      username: Current.user.rotki_username,
+      password: Current.user.rotki_encrypted_password
+    )
+
+    RotkiItem::Importer.new(rotki_item, rotki_service: rotki_service).import
+
+    rotki_item
+  end
+
+  def sync_rotki_accounts(rotki_item)
+    rotki_item.rotki_accounts.each do |rotki_account|
+      next unless rotki_account.account_provider&.account
+
+      rotki_account.account_provider.account.sync_later
     end
   end
 end

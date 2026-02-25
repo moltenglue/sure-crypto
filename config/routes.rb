@@ -360,6 +360,11 @@ Rails.application.routes.draw do
   resources :loans, only: %i[new create edit update]
   resources :cryptos, only: %i[new create edit update]
   resources :rotki_accounts, only: %i[new create]
+  resources :rotki_items, only: %i[] do
+    member do
+      post :sync
+    end
+  end
   resources :other_assets, only: %i[new create edit update]
   resources :other_liabilities, only: %i[new create edit update]
 

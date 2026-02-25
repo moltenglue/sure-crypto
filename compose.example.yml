@@ -149,6 +149,7 @@ services:
       - rotki-data:/data
     environment:
       - ROTKI_IS_HEADLESS=true
+      - ROTKI_ACCEPT_DOCKER_RISK=1
     restart: unless-stopped
     healthcheck:
       test: [ "CMD-SHELL", "curl -f http://localhost/api/1/ping || exit 1" ]

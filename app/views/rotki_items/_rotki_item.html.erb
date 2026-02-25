@@ -1,0 +1,79 @@
+<%# locals: (rotki_item:) %>
+
+<%= tag.div id: "rotki_item_#{rotki_item.id}" do %>
+  <details open class="group bg-container p-4 shadow-border-xs rounded-xl">
+    <summary class="flex items-center justify-between gap-2 focus-visible:outline-hidden">
+      <div class="flex items-center gap-2">
+        <%= icon "chevron-right", class: "group-open:transform group-open:rotate-90" %>
+
+        <div class="flex items-center justify-center h-8 w-8 rounded-full" style="background-color: rgba(123, 97, 255, 0.1);">
+          <div class="flex items-center justify-center">
+            <%= icon "wallet", size: "sm", class: "text-[#7B61FF]" %>
+          </div>
+        </div>
+
+        <div class="pl-1 text-sm">
+          <div class="flex items-center gap-2">
+            <%= tag.p rotki_item.name, class: "font-medium text-primary" %>
+            <% if rotki_item.scheduled_for_deletion? %>
+              <p class="text-destructive text-sm animate-pulse">Deletion in progress</p>
+            <% end %>
+          </div>
+          <p class="text-xs text-secondary">Rotki</p>
+          <% if rotki_item.syncing? %>
+            <div class="text-secondary flex items-center gap-1">
+              <%= icon "loader", size: "sm", class: "animate-spin" %>
+              <%= tag.span "Syncing..." %>
+            </div>
+          <% elsif rotki_item.requires_update? %>
+            <div class="text-warning flex items-center gap-1">
+              <%= icon "alert-triangle", size: "sm", color: "warning" %>
+              <%= tag.span "Reconnect required" %>
+            </div>
+          <% else %>
+            <p class="text-secondary">
+              <% if rotki_item.last_synced_at %>
+                <%= "Synced #{time_ago_in_words(rotki_item.last_synced_at)} ago - #{rotki_item.sync_status_summary}" %>
+              <% else %>
+                Never synced
+              <% end %>
+            </p>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <%= icon(
+          "refresh-cw",
+          as_button: true,
+          href: sync_rotki_item_path(rotki_item),
+          disabled: rotki_item.syncing?
+        ) %>
+
+        <%= render DS::Menu.new do |menu| %>
+          <% menu.with_item(
+            variant: "button",
+            text: "Delete",
+            icon: "trash-2",
+            href: "#",
+            method: :delete,
+            confirm: "Are you sure you want to remove Rotki?"
+          ) %>
+        <% end %>
+      </div>
+    </summary>
+
+    <% unless rotki_item.scheduled_for_deletion? %>
+      <div class="space-y-4 mt-4">
+        <% if rotki_item.accounts.any? %>
+          <%= render "accounts/index/account_groups", accounts: rotki_item.accounts %>
+        <% else %>
+          <div class="p-4 flex flex-col gap-3 items-center justify-center">
+            <p class="text-primary font-medium text-sm">No accounts imported</p>
+            <p class="text-secondary text-sm">Click sync to import your Rotki portfolio</p>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </details>
+<% end %>
