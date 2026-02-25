@@ -66,14 +66,20 @@ class RotkiAccountsController < ApplicationController
   private
 
   def ensure_rotki_item
+    Rails.logger.info "RotkiAccountsController: ensure_rotki_item called"
+    
     existing = Current.family.rotki_items.active.first
     return existing if existing
 
+    Rails.logger.info "RotkiAccountsController: Creating new rotki_item"
+    
     rotki_item = Current.family.rotki_items.create!(
       name: "Rotki",
       status: "good"
     )
 
+    Rails.logger.info "RotkiAccountsController: Current.user.rotki_username=#{Current.user.rotki_username.inspect}, rotki_encrypted_password present=#{Current.user.rotki_encrypted_password.present?}"
+    
     rotki_service = RotkiService.new(
       username: Current.user.rotki_username,
       password: Current.user.rotki_encrypted_password
