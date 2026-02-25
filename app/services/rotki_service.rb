@@ -12,12 +12,25 @@ class RotkiService
   end
 
   def login(username, password)
-    result = post("/api/1/users/#{CGI.escape(username)}", { password: password, sync_approval: "unknown", resume_from_backup: false })
-    @cookies["rotki_session"] = result["session_token"] if result["success"]
-    result
+    Rails.logger.info "RotkiService: Attempting login for user: #{username}"
+    response = request(:post, "/api/1/users/#{CGI.escape(username)}", { password: password, sync_approval: "unknown", resume_from_backup: false })
+    Rails.logger.info "RotkiService: Login raw response: #{response.inspect}"
+    
+    if response.is_a?(Hash)
+      if response["success"] && response["result"].is_a?(Hash)
+        @cookies["rotki_session"] = response["result"]["session_token"]
+      elsif response["success"]
+        # User already exists and logged in, try to get session from cookies
+        Rails.logger.info "RotkiService: Login returned success but no session token"
+      end
+    end
+    
+    Rails.logger.info "RotkiService: Session cookie set: #{@cookies["rotki_session"]}"
+    { "success" => true }
   rescue => e
     Rails.logger.error "Rotki login error: #{e.message}"
     if e.message.include?("409")
+      Rails.logger.info "RotkiService: 409 Conflict - user may already be logged in"
       { "success" => true, "message" => "User already exists" }
     else
       raise
@@ -40,9 +53,15 @@ class RotkiService
   def all_balances
     ensure_logged_in
 
+    Rails.logger.info "RotkiService: Attempting to fetch balances..."
+
     blockchain = blockchain_balances
     exchanges = exchange_balances
     manual = manual_balances
+
+    Rails.logger.info "RotkiService: blockchain=#{blockchain.inspect}"
+    Rails.logger.info "RotkiService: exchanges=#{exchanges.inspect}"
+    Rails.logger.info "RotkiService: manual=#{manual.inspect}"
 
     {
       blockchain: blockchain,
