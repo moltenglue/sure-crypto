@@ -1,7 +1,7 @@
 class CreateRotkiItems < ActiveRecord::Migration[7.2]
   def change
-    create_table :rotki_items do |t|
-      t.references :family, null: false, foreign_key: true
+    create_table :rotki_items, id: :uuid do |t|
+      t.references :family, type: :uuid, null: false, foreign_key: true
       t.string :name, default: "Rotki"
       t.string :status, default: "good"
       t.boolean :scheduled_for_deletion, default: false
@@ -10,8 +10,8 @@ class CreateRotkiItems < ActiveRecord::Migration[7.2]
       t.timestamps
     end
 
-    create_table :rotki_accounts do |t|
-      t.references :rotki_item, null: false, foreign_key: true
+    create_table :rotki_accounts, id: :uuid do |t|
+      t.references :rotki_item, type: :uuid, null: false, foreign_key: true
       t.string :name
       t.string :currency
       t.decimal :current_balance, precision: 20, scale: 8, default: 0
