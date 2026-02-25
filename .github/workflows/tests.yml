@@ -51,7 +51,7 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.4.7'
+          ruby-version: .ruby-version
           bundler-cache: true
 
       - name: Setup Node.js
@@ -60,12 +60,13 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y libpq-dev libvips
-          bundle install --jobs 4 --retry 3
-          npm ci
+
+      - name: Install Node dependencies
+        run: npm ci
 
       - name: Setup database
         run: |
@@ -165,7 +166,7 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.4.7'
+          ruby-version: .ruby-version
           bundler-cache: true
 
       - name: Setup Node.js
@@ -174,10 +175,8 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install dependencies
-        run: |
-          bundle install --jobs 4 --retry 3
-          npm ci
+      - name: Install Node dependencies
+        run: npm ci
 
       - name: Run Brakeman (Security)
         run: |
