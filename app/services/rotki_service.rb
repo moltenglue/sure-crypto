@@ -12,6 +12,7 @@ class RotkiService
   def login(username, password)
     post("/api/1/users/#{CGI.escape(username)}", { password: password, sync_approval: "import", resume_from_backup: false })
   rescue => e
+    Rails.logger.error "Rotki login error: #{e.message}"
     if e.message.include?("409")
       { "success" => true, "message" => "User already exists" }
     else
@@ -78,6 +79,7 @@ class RotkiService
     response = http.request(req)
 
     unless response.is_a?(Net::HTTPSuccess)
+      Rails.logger.error "Rotki API error response: #{response.code} - #{response.message} - #{response.body}"
       raise "Rotki API error: #{response.code} - #{response.message}"
     end
 
