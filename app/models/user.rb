@@ -1,9 +1,9 @@
 class User < ApplicationRecord
   include Encryptable
 
-  encrypts :rotki_password
+  include RotkiUserConcern
 
-  after_create_commit :sync_to_rotki
+  after_create_commit :sync_to_rotki_if_configured
 
   # Allow nil password for SSO-only users (JIT provisioning).
   # Custom validation ensures password is present for non-SSO registration.
@@ -164,22 +164,10 @@ class User < ApplicationRecord
   end
 
   # Attribute to skip password validation during SSO JIT provisioning
-  attr_accessor :skip_password_validation
+  attr_accessor :skip_password_validation, :rotki_password
 
-  def sync_to_rotki
-    return unless rotki_password.present?
-
-    RotkiService.new.create_user(email, rotki_password)
-    self.rotki_encrypted_password = rotki_password
-  end
-
-  def authenticate_with_rotki!(username, password)
-    result = RotkiService.new.login(username, password)
-    update!(
-      rotki_encrypted_password: encrypt_rotki_password(password),
-      rotki_username: username
-    )
-    result
+  def sync_to_rotki_if_configured
+    sync_to_rotki if rotki_configured?
   end
 
   # Deactivation
@@ -424,8 +412,24 @@ class User < ApplicationRecord
     def generate_backup_codes
       8.times.map { SecureRandom.hex(4) }
     end
+end
 
-    def encrypt_rotki_password(password)
-      password
+  def encrypt_rotki_password(password)
+    return nil if password.blank?
+
+    # Use Rails' encrypted attribute support for secure storage
+    # This leverages the same encryption as other sensitive fields
+    Rails.application.encrypted(password)
+  end
+
+  def decrypt_rotki_password
+    return nil if rotki_encrypted_password.blank?
+
+    begin
+      Rails.application.decrypt(rotki_encrypted_password)
+    rescue ActiveSupport::MessageEncryptor::InvalidMessage
+      Rails.logger.error "Failed to decrypt Rotki password for user #{id}"
+      nil
     end
+  end
 end

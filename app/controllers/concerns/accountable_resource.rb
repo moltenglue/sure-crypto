@@ -37,7 +37,7 @@ module AccountableResource
     @account = Current.family.accounts.create_and_sync(account_params.except(:return_to))
     @account.lock_saved_attributes!
 
-    redirect_to account_params[:return_to].presence || @account, notice: t("accounts.create.success", type: accountable_type.name.underscore.humanize)
+    redirect_to safe_redirect_url(account_params[:return_to]) || @account, notice: t("accounts.create.success", type: accountable_type.name.underscore.humanize)
   end
 
   def update
@@ -88,5 +88,24 @@ module AccountableResource
         :institution_name, :institution_domain, :notes,
         accountable_attributes: self.class.permitted_accountable_attributes
       )
+    end
+
+    def safe_redirect_url(url)
+      return nil if url.blank?
+
+      begin
+        parsed = URI.parse(url)
+
+        if parsed.host.nil?
+          url
+        elsif parsed.host == request.host && parsed.scheme.nil? || parsed.scheme == request.protocol.delete(":")
+          url
+        else
+          Rails.logger.warn "Open redirect attempt blocked: #{url}"
+          nil
+        end
+      rescue URI::InvalidURIError
+        nil
+      end
     end
 end

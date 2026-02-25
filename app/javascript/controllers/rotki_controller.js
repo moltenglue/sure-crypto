@@ -14,8 +14,16 @@ export default class extends Controller {
     }
   }
 
-  async connect(event) {
+  async handleConnect(event) {
     event.preventDefault();
+
+    // Validate password before sending
+    const password = this.passwordTarget.value;
+    if (!password || password.length < 1) {
+      alert("Password is required");
+      return;
+    }
+
     this.loadingTarget.classList.remove("hidden");
     this.passwordTarget.disabled = true;
 
@@ -26,7 +34,7 @@ export default class extends Controller {
           "Content-Type": "application/json",
           "X-CSRF-Token": document.querySelector('[name="csrf-token"]').content,
         },
-        body: JSON.stringify({ password: this.passwordTarget.value }),
+        body: JSON.stringify({ password: password }),
       });
 
       if (response.ok) {

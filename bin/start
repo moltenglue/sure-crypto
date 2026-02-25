@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+
+set -e
+
+APP_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$APP_ROOT"
+
+export PATH="/home/viber/.linuxbrew/Homebrew/Library/Homebrew/vendor/portable-ruby/3.4.8/bin:$PATH"
+
+echo "3.4.8" > .ruby-version
+
+echo "== Installing dependencies =="
+bundle check >/dev/null 2>&1 || bundle install
+
+echo ""
+echo "== Checking database connectivity =="
+if bundle exec rails runner "puts ActiveRecord::Base.connection.execute('SELECT 1').to_a" 2>/dev/null; then
+  echo "Database available - running tests"
+  bundle exec rails test "$@"
+else
+  echo "PostgreSQL not available - running static analysis only"
+  echo ""
+  echo "== Rubocop (Ruby style) =="
+  bundle exec rubocop --format simple 2>&1 | tail -20
+  
+  echo ""
+  echo "== JavaScript lint =="
+  npm run lint 2>&1 | tail -20
+  
+  echo ""
+  echo "============================================"
+  echo "To run full tests, you need PostgreSQL:"
+  echo ""
+  echo "Option 1: Start Docker"
+  echo "  docker compose -f docker-compose.local.yml up"
+  echo ""
+  echo "Option 2: Install PostgreSQL locally"
+  echo "  sudo apt-get install postgresql redis-server"
+  echo "  sudo service postgresql start"
+  echo "  sudo -u postgres createuser -s viber"
+  echo "  sudo -u postgres createdb sure_development"
+  echo "============================================"
+fi

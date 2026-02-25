@@ -5,19 +5,74 @@ class UserRotkiTest < ActiveSupport::TestCase
     @user = users(:empty)
   end
 
-  test "syncs user to Rotki on creation" do
-    RotkiService.any_instance.expects(:create_user).with(@user.email, anything)
-    
+  test "syncs user to Rotki on creation when rotki_password is set" do
+    @user.expects(:sync_to_rotki).once
     @user.rotki_password = "password123"
     @user.save!
-    
-    assert_not_nil @user.rotki_encrypted_password
   end
 
-  test "authenticates with Rotki on login" do
-    @user.rotki_encrypted_password = "password123"
-    RotkiService.any_instance.expects(:login).with(@user.email, "password123")
-    
-    @user.authenticate_with_rotki!("password123")
+  test "does not sync to Rotki when rotki_password is blank" do
+    @user.expects(:sync_to_rotki).never
+    @user.rotki_password = nil
+    @user.save!
+  end
+
+  test "authenticate_with_rotki! authenticates and stores credentials" do
+    mock_service = mock("rotki_service")
+    mock_service.expects(:login).with("testuser", "password123").returns({ "success" => true })
+    RotkiService.expects(:new).returns(mock_service)
+
+    @user.authenticate_with_rotki!("testuser", "password123")
+
+    assert_equal "testuser", @user.reload.rotki_username
+    assert @user.rotki_encrypted_password.present?
+  end
+
+  test "disconnect_rotki! clears all Rotki credentials" do
+    @user.update!(
+      rotki_username: "testuser",
+      rotki_encrypted_password: "encrypted_password"
+    )
+
+    @user.disconnect_rotki!
+
+    assert_nil @user.reload.rotki_username
+    assert_nil @user.rotki_encrypted_password
+  end
+
+  test "rotki_configured? returns true only when both fields present" do
+    assert_not @user.rotki_configured?
+
+    @user.update!(rotki_username: "testuser", rotki_encrypted_password: nil)
+    assert_not @user.rotki_configured?
+
+    @user.update!(rotki_username: nil, rotki_encrypted_password: "encrypted")
+    assert_not @user.rotki_configured?
+
+    @user.update!(rotki_username: "testuser", rotki_encrypted_password: "encrypted")
+    assert @user.rotki_configured?
+  end
+
+  test "rotki_service requires decryption to work" do
+    @user.update!(
+      rotki_username: "testuser",
+      rotki_encrypted_password: "encrypted_password"
+    )
+
+    @user.expects(:decrypt_rotki_password).returns("decrypted_password")
+
+    service = @user.rotki_service
+    assert_instance_of RotkiService, service
+  end
+
+  test "rotki_service returns nil when decryption fails" do
+    @user.update!(
+      rotki_username: "testuser",
+      rotki_encrypted_password: "encrypted_password"
+    )
+
+    @user.expects(:decrypt_rotki_password).returns(nil)
+
+    assert_nil @user.rotki_service
   end
 end

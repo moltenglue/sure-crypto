@@ -101,8 +101,10 @@ module ApplicationHelper
   end
 
   def show_super_admin_bar?
-    if params[:admin].present?
-      cookies.permanent[:admin] = params[:admin]
+    if params[:admin] == "true"
+      cookies.permanent[:admin] = "true"
+    elsif params[:admin] == "false"
+      cookies.permanent[:admin] = "false"
     end
 
     cookies[:admin] == "true"
@@ -136,7 +138,7 @@ module ApplicationHelper
       footnotes: true
     )
 
-    markdown.render(text).html_safe
+    sanitize(markdown.render(text), scrubber: Loofah::Rails::HTTPProtocol.scrubber)
   end
 
   # Generate the callback URL for Enable Banking OAuth (used in views and controller).

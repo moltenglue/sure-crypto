@@ -5,20 +5,12 @@ require "test_helper"
 class RotkiIntegrationTest < ActionDispatch::IntegrationTest
   setup do
     @user = users(:family_admin)
-    @oauth_app = Doorkeeper::Application.create!(
-      name: "Test API App",
-      redirect_uri: "https://example.com/callback",
-      scopes: "read read_write"
-    )
+    @read_key = create_api_key(@user, scopes: %w[read])
+    @read_write_key = create_api_key(@user, scopes: %w[read_write])
+    @write_key = create_api_key(@user, scopes: %w[write])
   end
 
   test "full flow: connect and fetch balances" do
-    access_token = Doorkeeper::AccessToken.create!(
-      application: @oauth_app,
-      resource_owner_id: @user.id,
-      scopes: "read_write"
-    )
-
     RotkiService.any_instance.stubs(:create_user).returns({
       "result" => { "exchanges" => [], "settings" => {} },
       "message" => ""
@@ -26,17 +18,11 @@ class RotkiIntegrationTest < ActionDispatch::IntegrationTest
 
     post "/api/v1/rotki/connect",
       params: { password: "test123" },
-      headers: { "Authorization" => "Bearer #{access_token.token}" }
+      headers: api_key_headers(@read_write_key)
 
     assert_response :success
 
-    access_token = Doorkeeper::AccessToken.create!(
-      application: @oauth_app,
-      resource_owner_id: @user.id,
-      scopes: "read"
-    )
-
-    Rotki::BalanceCache.any_instance.stubs(:get_balances).returns({
+    Rotki::BalanceCache.any_instance.stubs(:get_balances).with(@user).returns({
       "total" => {
         "ETH" => { "amount" => "1.0", "usd_value" => "3000.0" },
         "BTC" => { "amount" => "0.1", "usd_value" => "5000.0" }
@@ -44,7 +30,7 @@ class RotkiIntegrationTest < ActionDispatch::IntegrationTest
     })
 
     get "/api/v1/rotki/balances",
-      headers: { "Authorization" => "Bearer #{access_token.token}" }
+      headers: api_key_headers(@read_key)
 
     assert_response :success
 
@@ -54,30 +40,45 @@ class RotkiIntegrationTest < ActionDispatch::IntegrationTest
     assert_equal 2, json["balances"]["total"].size
   end
 
-  test "balances endpoint requires read scope" do
-    access_token = Doorkeeper::AccessToken.create!(
-      application: @oauth_app,
-      resource_owner_id: @user.id,
-      scopes: "write"
-    )
-
+  test "balances endpoint requires read scope - write-only key rejected" do
     get "/api/v1/rotki/balances",
-      headers: { "Authorization" => "Bearer #{access_token.token}" }
+      headers: api_key_headers(@write_key)
 
     assert_response :forbidden
   end
 
-  test "connect endpoint requires write scope" do
-    access_token = Doorkeeper::AccessToken.create!(
-      application: @oauth_app,
-      resource_owner_id: @user.id,
-      scopes: "read"
-    )
-
+  test "connect endpoint requires write scope - read-only key rejected" do
     post "/api/v1/rotki/connect",
       params: { password: "test123" },
-      headers: { "Authorization" => "Bearer #{access_token.token}" }
+      headers: api_key_headers(@read_key)
 
     assert_response :forbidden
   end
+
+  test "disconnect endpoint requires write scope" do
+    @user.update!(rotki_username: "testuser", rotki_encrypted_password: "encrypted")
+
+    post "/api/v1/rotki/disconnect",
+      headers: api_key_headers(@read_write_key)
+
+    assert_response :success
+    assert_nil @user.reload.rotki_username
+  end
+
+  private
+
+    def create_api_key(user, scopes:)
+      api_key = ApiKey.create!(
+        user: user,
+        name: "Test API Key",
+        scopes: scopes,
+        source: "test"
+      )
+      api_key.plain_key = api_key.key
+      api_key
+    end
+
+    def api_key_headers(api_key)
+      { "X-Api-Key" => api_key.plain_key }
+    end
 end
