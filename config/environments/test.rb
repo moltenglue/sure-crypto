@@ -72,6 +72,10 @@ Rails.application.configure do
   config.active_record.encryption.key_derivation_salt = "test"
   config.active_record.encryption.encrypt_fixtures = true
 
+  # Add asset paths for test environment
+  config.assets.paths << Rails.root.join("app/assets/builds")
+  config.assets.compile = true
+
   config.autoload_paths += %w[test/support]
 
   config.action_mailer.default_url_options = { host: "example.com" }
