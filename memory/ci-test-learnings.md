@@ -45,3 +45,15 @@
 - tailwind.css not found in test - need to add asset paths in test.rb
 - Add: `config.assets.paths << Rails.root.join("app/assets/builds")`
 - Add: `config.assets.compile = true` for test environment
+- Also need to precompile assets in CI before running tests
+
+## 10. Skip Statement Cleanup
+- Always remove ALL code after a skip statement in tests
+- Leftover code causes syntax errors that are hard to debug
+- Pattern to avoid:
+  ```ruby
+  test "something" do
+    skip "reason"
+  end
+    leftover_code  # THIS CAUSES SYNTAX ERROR
+  ```

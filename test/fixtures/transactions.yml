@@ -5,13 +5,15 @@ one:
 
 transfer_out:
   kind: transfer
+  category: income
 
 transfer_in:
   kind: transfer
+  category: income
 
 savings_one:
-  category: transfer
-  merchant: savings
+  category: income
+  merchant: amazon
   kind: transfer
 
 empty_one:
