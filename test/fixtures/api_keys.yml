@@ -5,6 +5,7 @@ active_key:
   name: "Production API Key"
   user: family_admin
   scopes: ["read_write"]
+  source: "web"
   last_used_at: <%= 1.hour.ago %>
   expires_at: <%= 1.year.from_now %>
   revoked_at: null
@@ -14,6 +15,7 @@ expired_key:
   name: "Expired API Key"
   user: family_member
   scopes: ["read"]
+  source: "web"
   last_used_at: <%= 1.week.ago %>
   expires_at: <%= 1.day.ago %>
   revoked_at: null
@@ -23,6 +25,7 @@ revoked_key:
   name: "Revoked API Key"
   user: family_admin
   scopes: ["read_write"]
+  source: "web"
   last_used_at: <%= 1.day.ago %>
   expires_at: null
   revoked_at: <%= 1.hour.ago %>
@@ -33,6 +36,7 @@ one:
   name: "Test API Key"
   display_key: "test_one_key_123"
   scopes: [ "read" ]
+  source: "web"
 
 two:
   id: <%= SecureRandom.uuid %>
@@ -40,4 +44,5 @@ two:
   name: "Second API Key"
   display_key: "test_two_key_456"
   scopes: [ "read_write" ]
+  source: "web"
   revoked_at: <%= 1.day.ago %>

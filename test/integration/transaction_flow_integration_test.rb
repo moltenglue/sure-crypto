@@ -6,7 +6,7 @@ class TransactionFlowIntegrationTest < ActionDispatch::IntegrationTest
   setup do
     @user = users(:empty)
     @account = accounts(:empty_checking)
-    @category = categories(:empty_uncategorized)
+    @category = categories(:one)
     sign_in(@user)
   end
 

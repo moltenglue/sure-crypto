@@ -12,3 +12,12 @@ savings_one:
   category: transfer
   merchant: savings
   kind: transfer
+
+empty_one:
+  account: empty_checking
+  category: one
+  name: Test Transaction
+  amount: 100
+  currency_code: USD
+  date: <%= Date.today %>
+  kind: payment

@@ -64,7 +64,7 @@ class ApiIntegrationTest < ActionDispatch::IntegrationTest
 
   def api_headers(api_key)
     {
-      "X-Api-Key" => api_key.token,
+      "X-Api-Key" => api_key.display_key,
       "Accept" => "application/json",
       "Content-Type" => "application/json"
     }
