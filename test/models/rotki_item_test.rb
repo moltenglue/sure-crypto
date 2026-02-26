@@ -57,12 +57,11 @@ class RotkiItemTest < ActiveSupport::TestCase
   test "destroy_later marks item for deletion and schedules destroy job" do
     rotki_item = @family.rotki_items.create!(name: "To Delete")
 
-    rotki_item.destroy_later
+    assert_enqueued_with(job: DestroyJob) do
+      rotki_item.destroy_later
+    end
 
     assert rotki_item.scheduled_for_deletion?
-    assert_enqueued_with(job: DestroyJob) do
-      # Job is enqueued when called
-    end
   end
 
   test "import_latest_rotki_data raises when credentials not configured" do

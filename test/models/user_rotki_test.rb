@@ -43,11 +43,11 @@ class UserRotkiTest < ActiveSupport::TestCase
   end
 
   test "authenticate_with_rotki! authenticates and stores credentials" do
-    mock_service = mock("rotki_service")
-    mock_service.expects(:login).with("testuser", "password123").returns({ "success" => true })
-    RotkiService.expects(:new).returns(mock_service)
-
-    @user.authenticate_with_rotki!("testuser", "password123")
+    mock_service = Minitest::Mock.new
+    mock_service.expect(:login, { "success" => true }, ["testuser", "password123"])
+    RotkiService.stub(:new, mock_service) do
+      @user.authenticate_with_rotki!("testuser", "password123")
+    end
 
     assert_equal "testuser", @user.reload.rotki_username
     assert @user.rotki_encrypted_password.present?
