@@ -12,6 +12,9 @@ env:
   CI: true
   RAILS_MASTER_KEY: test_master_key_for_github_actions
   SECRET_KEY_BASE: test_secret_key_base_for_github_actions_only_not_for_production
+  ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY: test_primary_key_32bytes123456789012345678901
+  ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY: test_deterministic_k32bytes1234567890123
+  ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT: test_salt_32bytes12345678901234567890
 
 jobs:
   # ==========================================

@@ -2,6 +2,21 @@ require_relative "boot"
 
 require "rails/all"
 
+# Skip encrypted credentials in CI test environment
+if ENV["SKIP_CREDENTIALS"] == "true"
+  module Rails
+    class Application
+      def credentials
+        @credentials ||= ActiveSupport::OrderedOptions.new
+      end
+      
+      def secrets
+        @secrets ||= ActiveSupport::OrderedOptions.new
+      end
+    end
+  end
+end
+
 # Require the gems listed in Gemfile, including any gems
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
