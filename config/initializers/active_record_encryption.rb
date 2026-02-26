@@ -14,20 +14,29 @@ if primary_key.present? && deterministic_key.present? && key_derivation_salt.pre
   Rails.application.config.active_record.encryption.primary_key = primary_key
   Rails.application.config.active_record.encryption.deterministic_key = deterministic_key
   Rails.application.config.active_record.encryption.key_derivation_salt = key_derivation_salt
-elsif Rails.application.config.app_mode.self_hosted? && !Rails.application.credentials.active_record_encryption.present?
-  # For self-hosted instances without credentials or env vars, auto-generate keys
-  # Use SECRET_KEY_BASE as the seed for deterministic key generation
-  # This ensures keys are consistent across container restarts
-  secret_base = Rails.application.secret_key_base
+elsif Rails.application.config.app_mode.self_hosted?
+  # Check if credentials are available, if not skip (e.g., in CI without credentials)
+  begin
+    has_credentials = Rails.application.credentials.active_record_encryption.present?
+  rescue StandardError
+    has_credentials = false
+  end
+  
+  if !has_credentials
+    # For self-hosted instances without credentials or env vars, auto-generate keys
+    # Use SECRET_KEY_BASE as the seed for deterministic key generation
+    # This ensures keys are consistent across container restarts
+    secret_base = Rails.application.secret_key_base
 
-  # Generate deterministic keys from the secret base
-  primary_key = Digest::SHA256.hexdigest("#{secret_base}:primary_key")[0..63]
-  deterministic_key = Digest::SHA256.hexdigest("#{secret_base}:deterministic_key")[0..63]
-  key_derivation_salt = Digest::SHA256.hexdigest("#{secret_base}:key_derivation_salt")[0..63]
+    # Generate deterministic keys from the secret base
+    primary_key = Digest::SHA256.hexdigest("#{secret_base}:primary_key")[0..63]
+    deterministic_key = Digest::SHA256.hexdigest("#{secret_base}:deterministic_key")[0..63]
+    key_derivation_salt = Digest::SHA256.hexdigest("#{secret_base}:key_derivation_salt")[0..63]
 
-  # Configure Active Record encryption
-  Rails.application.config.active_record.encryption.primary_key = primary_key
-  Rails.application.config.active_record.encryption.deterministic_key = deterministic_key
-  Rails.application.config.active_record.encryption.key_derivation_salt = key_derivation_salt
+    # Configure Active Record encryption
+    Rails.application.config.active_record.encryption.primary_key = primary_key
+    Rails.application.config.active_record.encryption.deterministic_key = deterministic_key
+    Rails.application.config.active_record.encryption.key_derivation_salt = key_derivation_salt
+  end
 end
 # If none of the above conditions are met, credentials from application.rb will be used
