@@ -1,6 +1,7 @@
 require "test_helper"
 
 class RotkiItemTest < ActiveSupport::TestCase
+  include ActiveJob::TestHelper
   setup do
     @family = families(:dylan_family)
     @user = users(:family_admin)
