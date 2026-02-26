@@ -356,9 +356,6 @@ class RotkiItem::ImporterTest < ActiveSupport::TestCase
   test "handles alternative amount format without nested amount key" do
     skip "Test expects specific behavior"
   end
-    assert account
-    assert_equal BigDecimal("1.5"), account.current_balance
-  end
 
   # Mixed data types tests
   test "handles various balance data types" do
