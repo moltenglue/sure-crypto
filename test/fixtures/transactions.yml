@@ -3,18 +3,12 @@ one:
   merchant: amazon
 
 transfer_out:
-  kind: payment
+  kind: transfer
+
 transfer_in:
   kind: transfer
 
-savings_one:
-  account_id: depository
-  category: transfer
-  merchant: savings
-  kind: transfer
-
 empty_one:
-  account: empty_checking
   category: one
   name: Test Transaction
   amount: 100
