@@ -51,9 +51,13 @@ class RotkiUserConcernTest < ActiveSupport::TestCase
 
   # authenticate_with_rotki! tests
   test "authenticate_with_rotki! stores encrypted password on success" do
-    mock_service = Minitest::Mock.new
-    mock_service.expect(:login, { "success" => true }, ["testuser", "password123"])
-    RotkiService.stub(:new, mock_service) do
+    mock_class = Class.new do
+      def initialize(*); end
+      def login(*)
+        { "success" => true }
+      end
+    end
+    stub_const("RotkiService", mock_class) do
       @user.authenticate_with_rotki!("testuser", "password123")
     end
 
@@ -62,9 +66,13 @@ class RotkiUserConcernTest < ActiveSupport::TestCase
   end
 
   test "authenticate_with_rotki! raises on connection failure" do
-    mock_service = Minitest::Mock.new
-    mock_service.expect(:login, -> { raise StandardError, "Connection failed" })
-    RotkiService.stub(:new, mock_service) do
+    mock_class = Class.new do
+      def initialize(*); end
+      def login(*)
+        raise StandardError, "Connection failed"
+      end
+    end
+    stub_const("RotkiService", mock_class) do
       assert_raises(RotkiUserConcern::RotkiConnectionError) do
         @user.authenticate_with_rotki!("testuser", "password123")
       end

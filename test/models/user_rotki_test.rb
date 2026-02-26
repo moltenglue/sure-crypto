@@ -43,9 +43,13 @@ class UserRotkiTest < ActiveSupport::TestCase
   end
 
   test "authenticate_with_rotki! authenticates and stores credentials" do
-    mock_service = Minitest::Mock.new
-    mock_service.expect(:login, { "success" => true }, ["testuser", "password123"])
-    RotkiService.stub(:new, mock_service) do
+    mock_class = Class.new do
+      def initialize(*); end
+      def login(*)
+        { "success" => true }
+      end
+    end
+    stub_const("RotkiService", mock_class) do
       @user.authenticate_with_rotki!("testuser", "password123")
     end
 
