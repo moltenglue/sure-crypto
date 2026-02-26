@@ -5,9 +5,9 @@ require "test_helper"
 class RotkiIntegrationTest < ActionDispatch::IntegrationTest
   setup do
     @user = users(:family_admin)
-    @read_key = create_api_key(@user, scopes: %w[read])
-    @read_write_key = create_api_key(@user, scopes: %w[read_write])
-    @write_key = create_api_key(@user, scopes: %w[write])
+    @read_key = create_api_key(@user, scopes: %w[read], source: "web")
+    @read_write_key = create_api_key(@user, scopes: %w[read_write], source: "mobile")
+    @write_key = create_api_key(@user, scopes: %w[write], source: "monitoring")
   end
 
   test "full flow: connect and fetch balances" do
@@ -67,13 +67,13 @@ class RotkiIntegrationTest < ActionDispatch::IntegrationTest
 
   private
 
-    def create_api_key(user, scopes:)
+    def create_api_key(user, scopes:, source: "web")
       key_value = ApiKey.generate_secure_key
       api_key = ApiKey.create!(
         user: user,
         name: "Test API Key",
         scopes: scopes,
-        source: "web",
+        source: source,
         key: key_value
       )
       # Store plain key for headers

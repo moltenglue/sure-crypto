@@ -57,3 +57,10 @@
   end
     leftover_code  # THIS CAUSES SYNTAX ERROR
   ```
+
+## 11. Fixture Foreign Key Constraints
+- Fixtures must reference valid associated fixtures
+- Transaction category must reference existing category fixture
+- Transaction merchant must reference existing merchant fixture
+- Error: "Key (category_id)=(...) is not present in table categories"
+- Solution: Check that referenced fixtures exist in related fixture files

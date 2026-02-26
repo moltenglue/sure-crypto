@@ -220,6 +220,10 @@ jobs:
           bundle exec rails db:migrate
           bundle exec rails db:seed
 
+      - name: Precompile assets
+        run: |
+          bundle exec rails assets:precompile || true
+
       - name: Run Integration Tests
         run: |
           bundle exec rails test test/integration/ -v --profile 10
@@ -458,6 +462,10 @@ jobs:
           bundle exec rails db:create
           bundle exec rails db:migrate
           bundle exec rails db:seed
+
+      - name: Precompile assets
+        run: |
+          bundle exec rails assets:precompile || true
 
       - name: Run Security Tests
         run: |
