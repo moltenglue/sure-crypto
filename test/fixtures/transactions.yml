@@ -9,6 +9,11 @@ transfer_out:
 transfer_in:
   kind: transfer
 
+savings_one:
+  category: transfer
+  merchant: savings
+  kind: transfer
+
 empty_one:
   category: one
   kind: payment

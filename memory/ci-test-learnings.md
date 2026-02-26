@@ -40,3 +40,8 @@
 - Current transactions table columns: category_id, merchant_id, locked_attributes, kind, external_id, extra, investment_activity_label
 - Transaction does NOT have: name, amount, currency_code, date, account_id - these are on Entry
 - This is because Transaction uses Entryable (delegated_type pattern)
+
+## 9. Assets in Test Environment
+- tailwind.css not found in test - need to add asset paths in test.rb
+- Add: `config.assets.paths << Rails.root.join("app/assets/builds")`
+- Add: `config.assets.compile = true` for test environment

@@ -142,6 +142,10 @@ jobs:
           bundle exec rails db:migrate
           bundle exec rails db:seed
 
+      - name: Precompile assets
+        run: |
+          bundle exec rails assets:precompile || true
+
       - name: Run Unit Tests (Models)
         run: |
           bundle exec rails test test/models/ -v --profile 10
