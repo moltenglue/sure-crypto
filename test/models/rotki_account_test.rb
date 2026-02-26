@@ -55,7 +55,9 @@ class RotkiAccountTest < ActiveSupport::TestCase
 
     account = @family.accounts.create!(
       name: "Crypto Account",
-      accountable: Crypto.new(subtype: "ETH")
+      accountable: Crypto.new(subtype: "ETH"),
+      balance: 0,
+      currency: "USD"
     )
 
     account_provider = AccountProvider.create!(
@@ -75,7 +77,9 @@ class RotkiAccountTest < ActiveSupport::TestCase
 
     account = @family.accounts.create!(
       name: "Crypto Account",
-      accountable: Crypto.new(subtype: "ETH")
+      accountable: Crypto.new(subtype: "ETH"),
+      balance: 0,
+      currency: "USD"
     )
 
     account_provider = AccountProvider.create!(
@@ -95,7 +99,9 @@ class RotkiAccountTest < ActiveSupport::TestCase
 
     account = @family.accounts.create!(
       name: "Crypto Account",
-      accountable: Crypto.new(subtype: "ETH")
+      accountable: Crypto.new(subtype: "ETH"),
+      balance: 0,
+      currency: "USD"
     )
 
     account_provider = AccountProvider.create!(

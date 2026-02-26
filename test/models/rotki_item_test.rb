@@ -30,7 +30,9 @@ class RotkiItemTest < ActiveSupport::TestCase
 
     account = @family.accounts.create!(
       name: "Crypto Account",
-      accountable: Crypto.new(subtype: "ETH")
+      accountable: Crypto.new(subtype: "ETH"),
+      balance: 0,
+      currency: "USD"
     )
     
     AccountProvider.create!(
@@ -154,7 +156,9 @@ class RotkiItemTest < ActiveSupport::TestCase
 
     account = @family.accounts.create!(
       name: "Crypto",
-      accountable: Crypto.new(subtype: "ETH")
+      accountable: Crypto.new(subtype: "ETH"),
+      balance: 0,
+      currency: "USD"
     )
     
     AccountProvider.create!(
@@ -178,7 +182,9 @@ class RotkiItemTest < ActiveSupport::TestCase
 
     account = @family.accounts.create!(
       name: "Crypto",
-      accountable: Crypto.new(subtype: "ETH")
+      accountable: Crypto.new(subtype: "ETH"),
+      balance: 0,
+      currency: "USD"
     )
     
     AccountProvider.create!(
@@ -222,7 +228,9 @@ class RotkiItemTest < ActiveSupport::TestCase
 
     account = @family.accounts.create!(
       name: "Crypto",
-      accountable: Crypto.new(subtype: "ETH")
+      accountable: Crypto.new(subtype: "ETH"),
+      balance: 0,
+      currency: "USD"
     )
     
     AccountProvider.create!(
