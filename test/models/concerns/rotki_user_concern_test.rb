@@ -51,12 +51,12 @@ class RotkiUserConcernTest < ActiveSupport::TestCase
 
   # authenticate_with_rotki! tests - skipped: requires external Rotki service connection
   # These tests require a running Rotki instance which isn't available in CI
-  test "authenticate_with_rotki! stores encrypted password on success", skip: "Requires Rotki service" do
-    skip
+  test "authenticate_with_rotki! stores encrypted password on success" do
+    skip "Requires Rotki service"
   end
 
-  test "authenticate_with_rotki! raises on connection failure", skip: "Requires Rotki service" do
-    skip
+  test "authenticate_with_rotki! raises on connection failure" do
+    skip "Requires Rotki service"
   end
 
   # disconnect_rotki! tests

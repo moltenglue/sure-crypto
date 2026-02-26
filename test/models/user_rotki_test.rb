@@ -42,8 +42,8 @@ class UserRotkiTest < ActiveSupport::TestCase
     new_user.save!
   end
 
-  test "authenticate_with_rotki! authenticates and stores credentials", skip: "Requires Rotki service" do
-    skip
+  test "authenticate_with_rotki! authenticates and stores credentials" do
+    skip "Requires Rotki service"
   end
 
   test "disconnect_rotki! clears all Rotki credentials" do
