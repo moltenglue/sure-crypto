@@ -34,3 +34,9 @@
 ## 7. Common Fixture Errors
 - "table X has no columns named Y" = wrong column name in fixture
 - Usually means the association is through another model (like Entry)
+
+## 8. Transaction Table Schema
+- Transactions table was renamed to `account_transactions` in migration but schema.rb shows `transactions`
+- Current transactions table columns: category_id, merchant_id, locked_attributes, kind, external_id, extra, investment_activity_label
+- Transaction does NOT have: name, amount, currency_code, date, account_id - these are on Entry
+- This is because Transaction uses Entryable (delegated_type pattern)

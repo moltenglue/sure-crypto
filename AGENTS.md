@@ -34,6 +34,10 @@
 - Never commit secrets. Start from `.env.local.example`; use `.env.local` for development only.
 - Run `bin/brakeman` before major PRs. Prefer environment variables over hard-coded values.
 
+## Knowledge Management
+- Always review `./memory/` before deploying code fixes to understand how things were fixed previously.
+- Always write key learnings or AHA moments into `./memory/` so future agents can reference them.
+
 ## API Development Guidelines
 
 ### OpenAPI Documentation (MANDATORY)
