@@ -30,10 +30,12 @@ class RotkiItemTest < ActiveSupport::TestCase
 
     account = @family.accounts.create!(
       name: "Crypto Account",
-      accountable: Crypto.new(subtype: "ETH"),
-      account_provider: AccountProvider.create!(
-        provider: rotki_account
-      )
+      accountable: Crypto.new(subtype: "ETH")
+    )
+    
+    AccountProvider.create!(
+      account: account,
+      provider: rotki_account
     )
 
     assert_equal 1, rotki_item.accounts.count
@@ -150,12 +152,14 @@ class RotkiItemTest < ActiveSupport::TestCase
     rotki_item = @family.rotki_items.create!(name: "My Rotki")
     rotki_account = rotki_item.rotki_accounts.create!(name: "ETH", currency: "ETH", account_type: "wallet")
 
-    @family.accounts.create!(
+    account = @family.accounts.create!(
       name: "Crypto",
-      accountable: Crypto.new(subtype: "ETH"),
-      account_provider: AccountProvider.create!(
-        provider: rotki_account
-      )
+      accountable: Crypto.new(subtype: "ETH")
+    )
+    
+    AccountProvider.create!(
+      account: account,
+      provider: rotki_account
     )
 
     assert_equal "All synced (1)", rotki_item.sync_status_summary
@@ -172,12 +176,14 @@ class RotkiItemTest < ActiveSupport::TestCase
     rotki_item = @family.rotki_items.create!(name: "My Rotki")
     rotki_account = rotki_item.rotki_accounts.create!(name: "ETH", currency: "ETH", account_type: "wallet")
 
-    @family.accounts.create!(
+    account = @family.accounts.create!(
       name: "Crypto",
-      accountable: Crypto.new(subtype: "ETH"),
-      account_provider: AccountProvider.create!(
-        provider: rotki_account
-      )
+      accountable: Crypto.new(subtype: "ETH")
+    )
+    
+    AccountProvider.create!(
+      account: account,
+      provider: rotki_account
     )
 
     assert_equal 1, rotki_item.linked_accounts_count
@@ -216,10 +222,12 @@ class RotkiItemTest < ActiveSupport::TestCase
 
     account = @family.accounts.create!(
       name: "Crypto",
-      accountable: Crypto.new(subtype: "ETH"),
-      account_provider: AccountProvider.create!(
-        provider: rotki_account
-      )
+      accountable: Crypto.new(subtype: "ETH")
+    )
+    
+    AccountProvider.create!(
+      account: account,
+      provider: rotki_account
     )
 
     account.expects(:sync_later)

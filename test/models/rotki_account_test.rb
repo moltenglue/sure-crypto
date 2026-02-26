@@ -53,7 +53,13 @@ class RotkiAccountTest < ActiveSupport::TestCase
       account_type: "wallet"
     )
 
+    account = @family.accounts.create!(
+      name: "Crypto Account",
+      accountable: Crypto.new(subtype: "ETH")
+    )
+
     account_provider = AccountProvider.create!(
+      account: account,
       provider: rotki_account
     )
 
@@ -67,14 +73,14 @@ class RotkiAccountTest < ActiveSupport::TestCase
       account_type: "wallet"
     )
 
-    account_provider = AccountProvider.create!(
-      provider: rotki_account
-    )
-
     account = @family.accounts.create!(
       name: "Crypto Account",
-      accountable: Crypto.new(subtype: "ETH"),
-      account_provider: account_provider
+      accountable: Crypto.new(subtype: "ETH")
+    )
+
+    account_provider = AccountProvider.create!(
+      account: account,
+      provider: rotki_account
     )
 
     assert_equal account, rotki_account.account
@@ -87,14 +93,14 @@ class RotkiAccountTest < ActiveSupport::TestCase
       account_type: "wallet"
     )
 
-    account_provider = AccountProvider.create!(
-      provider: rotki_account
-    )
-
     account = @family.accounts.create!(
       name: "Crypto Account",
-      accountable: Crypto.new(subtype: "ETH"),
-      account_provider: account_provider
+      accountable: Crypto.new(subtype: "ETH")
+    )
+
+    account_provider = AccountProvider.create!(
+      account: account,
+      provider: rotki_account
     )
 
     assert_equal account, rotki_account.current_account
