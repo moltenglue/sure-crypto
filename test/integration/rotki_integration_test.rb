@@ -73,7 +73,7 @@ class RotkiIntegrationTest < ActionDispatch::IntegrationTest
         user: user,
         name: "Test API Key",
         scopes: scopes,
-        source: "test",
+        source: "web",
         key: key_value
       )
       # Store plain key for headers

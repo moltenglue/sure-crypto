@@ -6,3 +6,9 @@ transfer_out:
   kind: payment
 transfer_in:
   kind: transfer
+
+savings_one:
+  account: depository
+  category: transfer
+  merchant: savings
+  kind: transfer

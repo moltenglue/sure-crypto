@@ -7,6 +7,15 @@ other_asset:
   accountable: one
   status: active
 
+empty_checking:
+  family: empty
+  name: Empty Checking
+  balance: 1000
+  currency: USD
+  accountable_type: Depository
+  accountable: one
+  status: active
+
 other_liability:
   family: dylan_family
   name: IOU (personal debt to friend)
@@ -87,5 +96,14 @@ crypto:
   balance: 10000
   currency: USD
   accountable_type: Crypto
+  accountable: one
+  status: active
+
+dollar_checking:
+  family: dollar
+  name: Dollar Checking
+  balance: 500
+  currency: USD
+  accountable_type: Depository
   accountable: one
   status: active

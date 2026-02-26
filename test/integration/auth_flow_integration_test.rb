@@ -45,7 +45,7 @@ class AuthFlowIntegrationTest < ActionDispatch::IntegrationTest
 
   test "user registration creates account and family" do
     assert_difference(["User.count", "Family.count"], 1) do
-      post users_path, params: {
+      post registration_path, params: {
         user: {
           email: "newuser@example.com",
           password: "SecurePass123!",
@@ -60,7 +60,7 @@ class AuthFlowIntegrationTest < ActionDispatch::IntegrationTest
   end
 
   test "registration with invalid data shows errors" do
-    post users_path, params: {
+    post registration_path, params: {
       user: {
         email: "invalid",
         password: "short",
