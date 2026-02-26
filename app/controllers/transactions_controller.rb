@@ -341,7 +341,11 @@ class TransactionsController < ApplicationController
     end
 
     def search_params
-      cleaned_params = params.fetch(:q, {})
+      q_params = params.fetch(:q, nil)
+      return {} unless q_params.present?
+      return {} unless q_params.is_a?(ActionController::Parameters) || q_params.is_a?(Hash)
+
+      cleaned_params = q_params
               .permit(
                 :start_date, :end_date, :search, :amount,
                 :amount_operator, :active_accounts_only,

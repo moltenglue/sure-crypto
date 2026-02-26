@@ -79,7 +79,6 @@ class RotkiItemTest < ActiveSupport::TestCase
   test "import_latest_rotki_data calls importer when credentials available" do
     skip "Requires external Rotki service mocking"
   end
-  end
 
   test "upsert_rotki_snapshot updates raw payload" do
     skip "Test implementation issue"
@@ -210,11 +209,5 @@ class RotkiItemTest < ActiveSupport::TestCase
 
   test "process_accounts processes linked accounts" do
     skip "Implementation changed - sync_later not called"
-  end
-
-    results = rotki_item.process_accounts
-
-    assert_equal 1, results.size
-    assert results.first[:success]
   end
 end
