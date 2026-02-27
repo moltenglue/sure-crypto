@@ -1,10 +1,14 @@
 class RotkiService
   BASE_URL = ENV.fetch("ROTKI_API_URL", "http://localhost:5042")
 
+  class AuthenticationError < StandardError; end
+  class ConnectionError < StandardError; end
+
   def initialize(username: nil, password: nil)
     @username = username
     @password = password
     @http = nil
+    @logged_in = false
   end
 
   def create_user(username, password)
@@ -16,7 +20,7 @@ class RotkiService
     
     # First try to logout any existing session to avoid 409 conflict
     begin
-      logout(username) if @username
+      logout(username) if @logged_in
     rescue => e
       Rails.logger.info "RotkiService: Could not logout existing session: #{e.message}"
     end
@@ -26,15 +30,17 @@ class RotkiService
       sync_approval: "unknown", 
       resume_from_backup: false 
     })
-    Rails.logger.info "RotkiService: Login response: #{response.inspect}"
+    
+    Rails.logger.info "RotkiService: Login successful for user: #{username}"
+    @logged_in = true
     
     { "success" => true }
   rescue => e
     Rails.logger.error "Rotki login error: #{e.message}"
     if e.message.include?("409")
-      Rails.logger.info "RotkiService: 409 Conflict - trying logout and retry login"
+      Rails.logger.info "RotkiService: 409 Conflict - user already logged in, trying logout and retry"
       begin
-        logout(username)
+        force_logout(username)
         retry
       rescue => retry_error
         Rails.logger.error "RotkiService: Retry failed: #{retry_error.message}"
@@ -48,11 +54,10 @@ class RotkiService
   def ensure_logged_in
     return if @logged_in
 
-    raise "Rotki username not provided" unless @username
-    raise "Rotki password not provided" unless @password
+    raise AuthenticationError, "Rotki username not provided" unless @username
+    raise AuthenticationError, "Rotki password not provided" unless @password
 
     login(@username, @password)
-    @logged_in = true
   end
 
   def logout(username)
@@ -62,26 +67,55 @@ class RotkiService
     @logged_in = false
     close_connection
     response
+  rescue => e
+    Rails.logger.warn "RotkiService: Logout failed (this is usually OK): #{e.message}"
+    @logged_in = false
+    close_connection
+    { "result" => true }
+  end
+
+  def force_logout(username)
+    Rails.logger.info "RotkiService: Force logout for user: #{username}"
+    patch("/api/1/users/#{username}", { action: "logout" })
+    @logged_in = false
+    close_connection
+  rescue => e
+    Rails.logger.warn "RotkiService: Force logout failed: #{e.message}"
+    @logged_in = false
+    close_connection
   end
 
   def all_balances
     ensure_logged_in
 
-    Rails.logger.info "RotkiService: Attempting to fetch balances..."
+    Rails.logger.info "RotkiService: Fetching balances..."
 
-    blockchain = blockchain_balances
-    exchanges = exchange_balances
-    manual = manual_balances
+    # Try to fetch balances with the current session
+    begin
+      blockchain = blockchain_balances
+      exchanges = exchange_balances
+      manual = manual_balances
 
-    Rails.logger.info "RotkiService: blockchain=#{blockchain.inspect}"
-    Rails.logger.info "RotkiService: exchanges=#{exchanges.inspect}"
-    Rails.logger.info "RotkiService: manual=#{manual.inspect}"
+      Rails.logger.info "RotkiService: Successfully fetched all balances"
 
-    {
-      blockchain: blockchain,
-      exchanges: exchanges,
-      manual: manual
-    }
+      {
+        blockchain: blockchain,
+        exchanges: exchanges,
+        manual: manual
+      }
+    rescue AuthenticationError, ConnectionError => e
+      Rails.logger.error "RotkiService: Authentication/Connection error fetching balances: #{e.message}"
+      raise
+    rescue => e
+      # Check if this is a session error
+      if e.message.include?("500") || e.message.include?("400") || e.message.include?("401") || e.message.include?("403")
+        Rails.logger.error "RotkiService: Session error fetching balances. This usually means nginx is stripping cookies."
+        Rails.logger.error "RotkiService: To fix this, set ROTKI_API_URL to connect directly to Rotki (e.g., http://rotki:5042) instead of through nginx."
+        raise AuthenticationError, "Rotki session failed. If using nginx proxy, connect directly to Rotki container instead. Error: #{e.message}"
+      else
+        raise
+      end
+    end
   end
 
   def balances
@@ -113,22 +147,35 @@ class RotkiService
   private
 
   def http_connection
-    return @http if @http
+    return @http if @http && @http.started?
+
+    close_connection if @http
 
     uri = URI.parse(BASE_URL)
+    Rails.logger.info "RotkiService: Creating HTTP connection to #{uri.host}:#{uri.port}"
+    
     @http = Net::HTTP.new(uri.host, uri.port)
     @http.use_ssl = uri.scheme == "https"
     @http.open_timeout = 10
     @http.read_timeout = 30
-    # Enable keep-alive to maintain session
-    @http.keep_alive_timeout = 30
+    
+    # Don't use keep_alive since nginx doesn't support it properly
+    # @http.keep_alive_timeout = 30
+    
     @http.start
     @http
+  rescue => e
+    Rails.logger.error "RotkiService: Failed to create HTTP connection: #{e.message}"
+    raise ConnectionError, "Failed to connect to Rotki at #{BASE_URL}: #{e.message}"
   end
 
   def close_connection
     if @http
-      @http.finish
+      begin
+        @http.finish if @http.started?
+      rescue => e
+        Rails.logger.warn "RotkiService: Error closing connection: #{e.message}"
+      end
       @http = nil
     end
     @logged_in = false
@@ -169,7 +216,7 @@ class RotkiService
           end
 
     req["Content-Type"] = "application/json"
-    req["Connection"] = "keep-alive"
+    req["Accept"] = "application/json"
     
     req.body = body.to_json if body
 
@@ -179,19 +226,29 @@ class RotkiService
     unless response.is_a?(Net::HTTPSuccess)
       Rails.logger.error "Rotki API error response: #{response.code} - #{response.message} - #{response.body}"
       
-      # If we get a 401 or 403, the session might have expired
+      # Check for authentication errors
       if response.code == "401" || response.code == "403"
-        Rails.logger.info "RotkiService: Session may have expired, clearing connection"
         close_connection
+        raise AuthenticationError, "Rotki authentication failed: #{response.code} - #{response.message}"
+      elsif response.code == "500" && response.body.include?("400 Bad Request")
+        close_connection
+        raise ConnectionError, "Rotki session lost (nginx proxy may be stripping cookies). Connect directly to Rotki container."
       end
       
       raise "Rotki API error: #{response.code} - #{response.message}"
     end
 
     JSON.parse(response.body)
+  rescue JSON::ParserError => e
+    Rails.logger.error "RotkiService: Failed to parse JSON response: #{e.message}"
+    raise ConnectionError, "Invalid response from Rotki: #{e.message}"
   rescue Errno::ECONNREFUSED, Net::OpenTimeout, Net::ReadTimeout => e
     Rails.logger.error "Rotki connection error: #{e.message}"
     close_connection
-    raise
+    raise ConnectionError, "Cannot connect to Rotki at #{BASE_URL}: #{e.message}"
+  rescue Errno::EPIPE, Errno::ECONNRESET => e
+    Rails.logger.error "Rotki connection closed: #{e.message}"
+    close_connection
+    raise ConnectionError, "Connection to Rotki was closed. If using nginx proxy, connect directly to Rotki container instead."
   end
 end
