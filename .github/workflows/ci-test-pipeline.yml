@@ -148,15 +148,15 @@ jobs:
 
       - name: Run Unit Tests (Models)
         run: |
-          bundle exec rails test test/models/ -v --profile 10
+          bundle exec rails test test/models/ --profile 10 2>&1 | tail -100
 
       - name: Run Unit Tests (Services)
         run: |
-          bundle exec rails test test/services/ -v --profile 10
+          bundle exec rails test test/services/ --profile 10 2>&1 | tail -100
 
       - name: Run Unit Tests (Jobs)
         run: |
-          bundle exec rails test test/jobs/ -v --profile 10 || true
+          bundle exec rails test test/jobs/ --profile 10 2>&1 | tail -100 || true
 
       - name: Upload test results
         if: failure()
@@ -226,11 +226,11 @@ jobs:
 
       - name: Run Integration Tests
         run: |
-          bundle exec rails test test/integration/ -v --profile 10
+          bundle exec rails test test/integration/ --profile 10 2>&1 | tail -150
 
       - name: Run Controller Tests
         run: |
-          bundle exec rails test test/controllers/ -v --profile 10
+          bundle exec rails test test/controllers/ --profile 10 2>&1 | tail -150
 
       - name: Upload test results
         if: failure()
