@@ -14,6 +14,19 @@ class RotkiAccountsController < ApplicationController
 
     Rails.logger.info "RotkiAccountsController: rotki_item.rotki_accounts.count = #{rotki_item.rotki_accounts.count}"
 
+    # If rotki_item exists but has no accounts, try to re-import from Rotki
+    # This handles cases where the first import failed
+    if rotki_item.rotki_accounts.empty? && rotki_item.persisted?
+      Rails.logger.info "RotkiAccountsController: Existing rotki_item has no accounts, attempting re-import..."
+      
+      rotki_service = Current.user.rotki_service
+      if rotki_service
+        import_result = RotkiItem::Importer.new(rotki_item, rotki_service: rotki_service).import
+        Rails.logger.info "RotkiAccountsController: Re-import result: #{import_result.inspect}"
+        rotki_item.reload
+      end
+    end
+
     if rotki_item.rotki_accounts.empty?
       return redirect_to accounts_path, alert: "No balances found in Rotki. Make sure you have crypto in your Rotki portfolio."
     end
