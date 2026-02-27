@@ -223,7 +223,9 @@ class RotkiService
     # Send session cookie if we have one
     if @session_cookie
       req["Cookie"] = @session_cookie
-      Rails.logger.debug "RotkiService: Sending session cookie: #{@session_cookie}"
+      Rails.logger.info "RotkiService: Sending request #{method.upcase} #{path} with session cookie"
+    else
+      Rails.logger.info "RotkiService: Sending request #{method.upcase} #{path} WITHOUT session cookie"
     end
     
     req.body = body.to_json if body
@@ -231,10 +233,29 @@ class RotkiService
     http = http_connection
     response = http.request(req)
 
-    # Capture session cookie from response
+    # Log ALL response headers for debugging
+    Rails.logger.info "RotkiService: Response headers: #{response.to_hash.inspect}"
+    
+    # Capture session cookie from response - check all possible cookie names
     if response["Set-Cookie"]
-      @session_cookie = response["Set-Cookie"]
-      Rails.logger.info "RotkiService: Captured session cookie: #{@session_cookie}"
+      set_cookie = response["Set-Cookie"]
+      Rails.logger.info "RotkiService: Raw Set-Cookie header: #{set_cookie.inspect}"
+      
+      # Try to find any session cookie - Rotki might use different names
+      # Common names: rotki_session, session, _rotki_session
+      cookie_match = set_cookie.to_s.match(/(?:rotki_session|session)=([^;]+)/i)
+      if cookie_match
+        # Get the actual cookie name from the match
+        cookie_name = set_cookie.to_s.match(/([^=]+)=/)[1]
+        @session_cookie = "#{cookie_name}=#{cookie_match[1]}"
+        Rails.logger.info "RotkiService: Captured session cookie: #{@session_cookie}"
+      else
+        # If we can't parse it, store the whole thing and try using it
+        @session_cookie = set_cookie.to_s.split(';').first.strip
+        Rails.logger.info "RotkiService: Storing full cookie string (unparsed): #{@session_cookie}"
+      end
+    else
+      Rails.logger.info "RotkiService: No Set-Cookie header in response"
     end
 
     unless response.is_a?(Net::HTTPSuccess)

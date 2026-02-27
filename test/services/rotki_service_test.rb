@@ -48,7 +48,7 @@ class RotkiServiceTest < ActiveSupport::TestCase
 
   test "logout sends patch request with action logout" do
     @service = RotkiService.new(username: "testuser", password: "password123")
-    @service.instance_variable_set(:@cookies, { "rotki_session" => "some_token" })
+    @service.instance_variable_set(:@session_cookie, "rotki_session=some_token")
 
     stub_rotki_api(:patch, "/api/1/users/testuser", { "result" => true, "message" => "" })
 
@@ -146,7 +146,7 @@ class RotkiServiceTest < ActiveSupport::TestCase
 
   test "ensure_logged_in does nothing when already logged in" do
     @service = RotkiService.new(username: "testuser", password: "password123")
-    @service.instance_variable_set(:@cookies, { "rotki_session" => "existing_token" })
+    @service.instance_variable_set(:@session_cookie, "rotki_session=existing_token")
 
     result = @service.ensure_logged_in
 
@@ -164,7 +164,7 @@ class RotkiServiceTest < ActiveSupport::TestCase
 
   test "includes session cookie in requests when logged in" do
     @service = RotkiService.new(username: "testuser", password: "password123")
-    @service.instance_variable_set(:@cookies, { "rotki_session" => "my_session_token" })
+    @service.instance_variable_set(:@session_cookie, "rotki_session=my_session_token")
 
     base_url = "http://localhost:5042"
     url = "#{base_url}/api/1/balances"
