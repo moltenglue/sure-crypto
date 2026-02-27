@@ -64,3 +64,13 @@
 - Transaction merchant must reference existing merchant fixture
 - Error: "Key (category_id)=(...) is not present in table categories"
 - Solution: Check that referenced fixtures exist in related fixture files
+
+## 12. Route Issues in Tests
+- Always verify routes exist before using them in tests
+- Use `rails routes | grep` to check available routes
+- `account_transactions_path` may not exist - use `transactions_path` instead
+
+## 13. Controller Parameter Handling
+- `params.fetch(:key, {})` can return String, not Hash, if value is passed
+- Always validate parameter type before calling .permit
+- Fix: Check `is_a?(ActionController::Parameters) || is_a?(Hash)` before permitting

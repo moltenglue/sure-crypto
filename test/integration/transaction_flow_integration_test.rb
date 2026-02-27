@@ -12,21 +12,22 @@ class TransactionFlowIntegrationTest < ActionDispatch::IntegrationTest
 
   test "user can create a transaction" do
     assert_difference("Transaction.count") do
-      post account_transactions_path(@account), params: {
+      post transactions_path, params: {
         transaction: {
           name: "Grocery Store",
           amount: 50.00,
           currency_code: "USD",
           date: Date.today.to_s,
-          category_id: @category.id
+          category_id: @category.id,
+          account_id: @account.id
         }
       }
     end
-    assert_redirected_to account_path(@account)
+    assert_redirected_to transactions_path
   end
 
   test "user can view transaction list" do
-    get account_transactions_path(@account)
+    get transactions_path
     assert_response :success
   end
 
@@ -38,7 +39,7 @@ class TransactionFlowIntegrationTest < ActionDispatch::IntegrationTest
         amount: 75.00
       }
     }
-    assert_redirected_to account_path(transaction.account)
+    assert_redirected_to transactions_path
     transaction.reload
     assert_equal "Updated Name", transaction.name
   end
@@ -48,11 +49,11 @@ class TransactionFlowIntegrationTest < ActionDispatch::IntegrationTest
     assert_difference("Transaction.count", -1) do
       delete transaction_path(transaction)
     end
-    assert_redirected_to account_path(transaction.account)
+    assert_redirected_to transactions_path
   end
 
   test "transaction creation with invalid data shows errors" do
-    post account_transactions_path(@account), params: {
+    post transactions_path, params: {
       transaction: {
         name: "",
         amount: nil
