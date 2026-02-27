@@ -9,21 +9,18 @@ class SnaptradeAccountTest < ActiveSupport::TestCase
   end
 
   test "validates presence of name" do
-    skip "Pre-existing test issue"
     @snaptrade_account.name = nil
-    assert_not @snaptrade_account.valid?
+    refute @snaptrade_account.valid?
     assert_includes @snaptrade_account.errors[:name], "can't be blank"
   end
 
   test "validates presence of currency" do
-    skip "Pre-existing test issue"
     @snaptrade_account.currency = nil
-    assert_not @snaptrade_account.valid?
+    refute @snaptrade_account.valid?
     assert_includes @snaptrade_account.errors[:currency], "can't be blank"
   end
 
   test "ensure_account_provider! creates link when account provided" do
-    skip "Pre-existing test issue"
     account = @family.accounts.create!(
       name: "Test Investment",
       balance: 10000,
@@ -36,12 +33,11 @@ class SnaptradeAccountTest < ActiveSupport::TestCase
     @snaptrade_account.ensure_account_provider!(account)
     @snaptrade_account.reload
 
-    assert_not_nil @snaptrade_account.account_provider
+    refute_nil @snaptrade_account.account_provider
     assert_equal account, @snaptrade_account.current_account
   end
 
   test "ensure_account_provider! updates link when account changes" do
-    skip "Pre-existing test issue"
     account1 = @family.accounts.create!(
       name: "First Account",
       balance: 10000,
@@ -63,7 +59,6 @@ class SnaptradeAccountTest < ActiveSupport::TestCase
   end
 
   test "ensure_account_provider! is idempotent" do
-    skip "Pre-existing test issue"
     account = @family.accounts.create!(
       name: "Test Investment",
       balance: 10000,
@@ -81,7 +76,6 @@ class SnaptradeAccountTest < ActiveSupport::TestCase
   end
 
   test "upsert_holdings_snapshot! stores holdings and updates timestamp" do
-    skip "Pre-existing test issue"
     holdings = [
       { "symbol" => { "symbol" => "AAPL" }, "units" => 10 },
       { "symbol" => { "symbol" => "MSFT" }, "units" => 5 }
@@ -90,11 +84,10 @@ class SnaptradeAccountTest < ActiveSupport::TestCase
     @snaptrade_account.upsert_holdings_snapshot!(holdings)
 
     assert_equal holdings, @snaptrade_account.raw_holdings_payload
-    assert_not_nil @snaptrade_account.last_holdings_sync
+    refute_nil @snaptrade_account.last_holdings_sync
   end
 
   test "upsert_activities_snapshot! stores activities and updates timestamp" do
-    skip "Pre-existing test issue"
     activities = [
       { "id" => "act1", "type" => "BUY", "amount" => 1000 },
       { "id" => "act2", "type" => "DIVIDEND", "amount" => 50 }
@@ -103,11 +96,10 @@ class SnaptradeAccountTest < ActiveSupport::TestCase
     @snaptrade_account.upsert_activities_snapshot!(activities)
 
     assert_equal activities, @snaptrade_account.raw_activities_payload
-    assert_not_nil @snaptrade_account.last_activities_sync
+    refute_nil @snaptrade_account.last_activities_sync
   end
 
   test "upsert_from_snaptrade! extracts data from API response" do
-    skip "Pre-existing test issue"
     api_response = {
       "id" => "new_account_id",
       "brokerage_authorization" => "auth_xyz",
@@ -132,7 +124,6 @@ class SnaptradeAccountTest < ActiveSupport::TestCase
   end
 
   test "snaptrade_credentials returns credentials from parent item" do
-    skip "Pre-existing test issue"
     credentials = @snaptrade_account.snaptrade_credentials
 
     assert_equal "user_123", credentials[:user_id]
@@ -140,7 +131,6 @@ class SnaptradeAccountTest < ActiveSupport::TestCase
   end
 
   test "snaptrade_provider returns provider from parent item" do
-    skip "Pre-existing test issue"
     provider = @snaptrade_account.snaptrade_provider
 
     assert_instance_of Provider::Snaptrade, provider
