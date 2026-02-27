@@ -4,7 +4,7 @@ class RotkiService
   def initialize(username: nil, password: nil)
     @username = username
     @password = password
-    @cookies = {}
+    @http = nil
   end
 
   def create_user(username, password)
@@ -21,16 +21,18 @@ class RotkiService
       Rails.logger.info "RotkiService: Could not logout existing session: #{e.message}"
     end
     
-    response = request(:post, "/api/1/users/#{CGI.escape(username)}", { password: password, sync_approval: "unknown", resume_from_backup: false })
+    response = request(:post, "/api/1/users/#{CGI.escape(username)}", { 
+      password: password, 
+      sync_approval: "unknown", 
+      resume_from_backup: false 
+    })
     Rails.logger.info "RotkiService: Login response: #{response.inspect}"
-    Rails.logger.info "RotkiService: Session cookie after login: #{@cookies["rotki_session"]}"
     
     { "success" => true }
   rescue => e
     Rails.logger.error "Rotki login error: #{e.message}"
     if e.message.include?("409")
       Rails.logger.info "RotkiService: 409 Conflict - trying logout and retry login"
-      # Try one more time after logout
       begin
         logout(username)
         retry
@@ -44,19 +46,21 @@ class RotkiService
   end
 
   def ensure_logged_in
-    return if @cookies["rotki_session"]
+    return if @logged_in
 
     raise "Rotki username not provided" unless @username
     raise "Rotki password not provided" unless @password
 
     login(@username, @password)
+    @logged_in = true
   end
 
   def logout(username)
     Rails.logger.info "RotkiService: Attempting logout for user: #{username}"
     response = patch("/api/1/users/#{username}", { action: "logout" })
     Rails.logger.info "RotkiService: Logout response: #{response.inspect}"
-    @cookies["rotki_session"] = nil
+    @logged_in = false
+    close_connection
     response
   end
 
@@ -108,6 +112,28 @@ class RotkiService
 
   private
 
+  def http_connection
+    return @http if @http
+
+    uri = URI.parse(BASE_URL)
+    @http = Net::HTTP.new(uri.host, uri.port)
+    @http.use_ssl = uri.scheme == "https"
+    @http.open_timeout = 10
+    @http.read_timeout = 30
+    # Enable keep-alive to maintain session
+    @http.keep_alive_timeout = 30
+    @http.start
+    @http
+  end
+
+  def close_connection
+    if @http
+      @http.finish
+      @http = nil
+    end
+    @logged_in = false
+  end
+
   def get(path)
     response = request(:get, path)
     if response.is_a?(Hash)
@@ -135,11 +161,7 @@ class RotkiService
 
   def request(method, path, body = nil)
     uri = URI.join(BASE_URL, path)
-    http = Net::HTTP.new(uri.host, uri.port)
-    http.use_ssl = uri.scheme == "https"
-    http.open_timeout = 10
-    http.read_timeout = 30
-
+    
     req = case method
           when :get then Net::HTTP::Get.new(uri)
           when :post then Net::HTTP::Post.new(uri)
@@ -147,37 +169,29 @@ class RotkiService
           end
 
     req["Content-Type"] = "application/json"
-
-    if @cookies["rotki_session"]
-      req["Cookie"] = "rotki_session=#{@cookies["rotki_session"]}"
-    end
-
+    req["Connection"] = "keep-alive"
+    
     req.body = body.to_json if body
 
+    http = http_connection
     response = http.request(req)
-
-    # Debug: Log all response headers
-    Rails.logger.info "RotkiService: Response headers: #{response.to_hash.inspect}"
-
-    # Capture session cookie from response headers
-    if response["Set-Cookie"]
-      cookie_header = response["Set-Cookie"]
-      Rails.logger.info "RotkiService: Set-Cookie header: #{cookie_header}"
-      if cookie_header =~ /rotki_session=([^;]+)/
-        @cookies["rotki_session"] = $1
-        Rails.logger.info "RotkiService: Captured session cookie from response"
-      else
-        Rails.logger.info "RotkiService: Set-Cookie header did not match rotki_session pattern"
-      end
-    else
-      Rails.logger.info "RotkiService: No Set-Cookie header in response"
-    end
 
     unless response.is_a?(Net::HTTPSuccess)
       Rails.logger.error "Rotki API error response: #{response.code} - #{response.message} - #{response.body}"
+      
+      # If we get a 401 or 403, the session might have expired
+      if response.code == "401" || response.code == "403"
+        Rails.logger.info "RotkiService: Session may have expired, clearing connection"
+        close_connection
+      end
+      
       raise "Rotki API error: #{response.code} - #{response.message}"
     end
 
     JSON.parse(response.body)
+  rescue Errno::ECONNREFUSED, Net::OpenTimeout, Net::ReadTimeout => e
+    Rails.logger.error "Rotki connection error: #{e.message}"
+    close_connection
+    raise
   end
 end
