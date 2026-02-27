@@ -24,6 +24,9 @@ class User < ApplicationRecord
     # PII - names (non-deterministic for maximum security)
     encrypts :first_name
     encrypts :last_name
+
+    # Rotki credentials
+    encrypts :rotki_encrypted_password, deterministic: true
   end
 
   belongs_to :family
@@ -416,19 +419,20 @@ class User < ApplicationRecord
     def encrypt_rotki_password(password)
       return nil if password.blank?
 
-      # Use Rails' encrypted attribute support for secure storage
-      # This leverages the same encryption as other sensitive fields
-      Rails.application.encrypted(password)
+      # Use ActiveRecord encryption if available, otherwise store plaintext
+      # The rotki_encrypted_password field will be automatically encrypted
+      # by the encrypts declaration above if encryption is configured
+      password
     end
 
     def decrypt_rotki_password
       return nil if rotki_encrypted_password.blank?
 
-      begin
-        Rails.application.decrypt(rotki_encrypted_password)
-      rescue ActiveSupport::MessageEncryptor::InvalidMessage
-        Rails.logger.error "Failed to decrypt Rotki password for user #{id}"
-        nil
-      end
+      # The rotki_encrypted_password field is automatically decrypted
+      # by ActiveRecord encryption when accessed
+      rotki_encrypted_password
+    rescue => e
+      Rails.logger.error "Failed to decrypt Rotki password for user #{id}: #{e.message}"
+      nil
     end
 end
