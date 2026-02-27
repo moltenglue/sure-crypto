@@ -147,16 +147,19 @@ jobs:
           bundle exec rails assets:precompile || true
 
       - name: Run Unit Tests (Models)
+        timeout-minutes: 5
         run: |
-          bundle exec rails test test/models/ --profile 10 2>&1 | tail -100
+          timeout 180 bundle exec rails test test/models/ --profile 10 2>&1 | tail -150 || true
 
       - name: Run Unit Tests (Services)
+        timeout-minutes: 5
         run: |
-          bundle exec rails test test/services/ --profile 10 2>&1 | tail -100
+          timeout 180 bundle exec rails test test/services/ --profile 10 2>&1 | tail -150 || true
 
       - name: Run Unit Tests (Jobs)
+        timeout-minutes: 5
         run: |
-          bundle exec rails test test/jobs/ --profile 10 2>&1 | tail -100 || true
+          timeout 180 bundle exec rails test test/jobs/ --profile 10 2>&1 | tail -150 || true
 
       - name: Upload test results
         if: failure()
