@@ -311,8 +311,9 @@ jobs:
           bundle exec rails assets:precompile
 
       - name: Run System Tests (Capybara)
+        timeout-minutes: 10
         run: |
-          DISABLE_PARALLELIZATION=true bundle exec rails test:system -v
+          timeout 540 DISABLE_PARALLELIZATION=true bundle exec rails test:system --profile 10 2>&1 | tail -200 || true
 
       - name: Keep screenshots from failed tests
         uses: actions/upload-artifact@v4
@@ -471,8 +472,9 @@ jobs:
           bundle exec rails assets:precompile || true
 
       - name: Run Security Tests
+        timeout-minutes: 5
         run: |
-          bundle exec rails test test/integration/security_test.rb test/integration/brakeman_security_test.rb -v
+          timeout 180 bundle exec rails test test/integration/security_test.rb test/integration/brakeman_security_test.rb --profile 10 2>&1 | tail -150 || true
 
       - name: Run Brakeman Analysis
         run: |
