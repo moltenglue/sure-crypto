@@ -85,9 +85,9 @@
 
 ## 15. Rotki Behind Nginx Proxy
 - When Rotki is behind nginx, Set-Cookie headers may be stripped
-- Solution: Use persistent HTTP connections with keep-alive instead of cookies
+- Solution: Connect directly to Rotki backend API port (4242) instead of nginx proxy (5042)
+- Session state is maintained through TCP connection, not cookies
 - Create persistent `Net::HTTP` connection with `keep_alive_timeout`
 - Reuse same connection for login and subsequent API calls
-- Session state is maintained through TCP connection, not cookies
-- Add `Connection: keep-alive` header to requests
 - Close connection on auth errors (401/403) to force re-login
+- **Key**: Bypass nginx entirely by using the direct Rotki API URL (port 4242)
