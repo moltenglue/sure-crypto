@@ -8,18 +8,6 @@ class UserRotkiTest < ActiveSupport::TestCase
   test "syncs user to Rotki on creation when rotki_password is set" do
     skip "Requires Rotki service mocking"
   end
-      email: "newuser#{Time.now.to_i}@example.com",
-      password: "SecurePass123!",
-      password_confirmation: "SecurePass123!",
-      first_name: "Test",
-      last_name: "User",
-      family: @user.family,
-      rotki_password: "password123",
-      rotki_username: "testuser",
-      rotki_encrypted_password: "encrypted"
-    )
-    new_user.save!
-  end
 
   test "does not sync to Rotki when rotki_password is blank" do
     RotkiService.expects(:new).never
