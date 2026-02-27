@@ -9,6 +9,7 @@ class RotkiService
     @password = password
     @http = nil
     @logged_in = false
+    @session_cookie = nil
   end
 
   def create_user(username, password)
@@ -179,6 +180,7 @@ class RotkiService
       @http = nil
     end
     @logged_in = false
+    @session_cookie = nil
   end
 
   def get(path)
@@ -218,10 +220,22 @@ class RotkiService
     req["Content-Type"] = "application/json"
     req["Accept"] = "application/json"
     
+    # Send session cookie if we have one
+    if @session_cookie
+      req["Cookie"] = @session_cookie
+      Rails.logger.debug "RotkiService: Sending session cookie: #{@session_cookie}"
+    end
+    
     req.body = body.to_json if body
 
     http = http_connection
     response = http.request(req)
+
+    # Capture session cookie from response
+    if response["Set-Cookie"]
+      @session_cookie = response["Set-Cookie"]
+      Rails.logger.info "RotkiService: Captured session cookie: #{@session_cookie}"
+    end
 
     unless response.is_a?(Net::HTTPSuccess)
       Rails.logger.error "Rotki API error response: #{response.code} - #{response.message} - #{response.body}"
@@ -232,7 +246,7 @@ class RotkiService
         raise AuthenticationError, "Rotki authentication failed: #{response.code} - #{response.message}"
       elsif response.code == "500" && response.body.include?("400 Bad Request")
         close_connection
-        raise ConnectionError, "Rotki session lost (nginx proxy may be stripping cookies). Connect directly to Rotki container."
+        raise ConnectionError, "Rotki session lost. Error: #{response.body}"
       end
       
       raise "Rotki API error: #{response.code} - #{response.message}"
@@ -249,6 +263,6 @@ class RotkiService
   rescue Errno::EPIPE, Errno::ECONNRESET => e
     Rails.logger.error "Rotki connection closed: #{e.message}"
     close_connection
-    raise ConnectionError, "Connection to Rotki was closed. If using nginx proxy, connect directly to Rotki container instead."
+    raise ConnectionError, "Connection to Rotki was closed."
   end
 end
