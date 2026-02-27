@@ -74,3 +74,20 @@
 - `params.fetch(:key, {})` can return String, not Hash, if value is passed
 - Always validate parameter type before calling .permit
 - Fix: Check `is_a?(ActionController::Parameters) || is_a?(Hash)` before permitting
+
+## 14. Rotki API Session Management
+- Rotki API requires session cookie for authenticated requests
+- Login endpoint returns user settings but session cookie may not be captured
+- Cookie capture regex: `/rotki_session=([^;]+)/`
+- If cookie not captured, subsequent requests fail with 500 + "400 Bad Request"
+- Debug: Log all response headers to see what Set-Cookie header contains
+- Rotki may use different cookie name or header format than expected
+
+## 15. Rotki Behind Nginx Proxy
+- When Rotki is behind nginx, Set-Cookie headers may be stripped
+- Solution: Use persistent HTTP connections with keep-alive instead of cookies
+- Create persistent `Net::HTTP` connection with `keep_alive_timeout`
+- Reuse same connection for login and subsequent API calls
+- Session state is maintained through TCP connection, not cookies
+- Add `Connection: keep-alive` header to requests
+- Close connection on auth errors (401/403) to force re-login
