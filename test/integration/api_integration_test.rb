@@ -16,7 +16,6 @@ class ApiIntegrationTest < ActionDispatch::IntegrationTest
   end
 
   test "authenticated requests with valid API key succeed" do
-    skip "Pre-existing test issue - API key authentication failing"
     get api_v1_accounts_path, headers: api_headers(@api_key)
     assert_response :success
     json = JSON.parse(response.body)
@@ -24,7 +23,6 @@ class ApiIntegrationTest < ActionDispatch::IntegrationTest
   end
 
   test "authenticated requests can create transactions" do
-    skip "Pre-existing test issue - API key authentication/model mismatch"
     assert_difference("Transaction.count") do
       post api_v1_transactions_path, 
            headers: api_headers(@api_key),
@@ -32,7 +30,7 @@ class ApiIntegrationTest < ActionDispatch::IntegrationTest
              transaction: {
                account_id: @account.id,
                amount: 100.00,
-               currency_code: "USD",
+               currency: "USD",
                name: "Test Transaction",
                date: Date.today.to_s
              }
@@ -54,7 +52,6 @@ class ApiIntegrationTest < ActionDispatch::IntegrationTest
   end
 
   test "read-only key cannot create transactions" do
-    skip "Pre-existing test issue - request parsing error"
     read_key = api_keys(:active_key)
     read_key.update!(scopes: ["read"])
     
@@ -64,7 +61,7 @@ class ApiIntegrationTest < ActionDispatch::IntegrationTest
            transaction: {
              account_id: @account.id,
              amount: 100.00,
-             currency_code: "USD",
+             currency: "USD",
              name: "Test Transaction",
              date: Date.today.to_s
            }
