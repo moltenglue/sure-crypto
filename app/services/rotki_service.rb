@@ -156,13 +156,21 @@ class RotkiService
 
     response = http.request(req)
 
+    # Debug: Log all response headers
+    Rails.logger.info "RotkiService: Response headers: #{response.to_hash.inspect}"
+
     # Capture session cookie from response headers
     if response["Set-Cookie"]
       cookie_header = response["Set-Cookie"]
+      Rails.logger.info "RotkiService: Set-Cookie header: #{cookie_header}"
       if cookie_header =~ /rotki_session=([^;]+)/
         @cookies["rotki_session"] = $1
         Rails.logger.info "RotkiService: Captured session cookie from response"
+      else
+        Rails.logger.info "RotkiService: Set-Cookie header did not match rotki_session pattern"
       end
+    else
+      Rails.logger.info "RotkiService: No Set-Cookie header in response"
     end
 
     unless response.is_a?(Net::HTTPSuccess)
