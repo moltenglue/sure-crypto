@@ -8,7 +8,6 @@ class AuthFlowIntegrationTest < ActionDispatch::IntegrationTest
   end
 
   test "user can login with valid credentials" do
-    skip "Pre-existing test issue - routes/assertions may be wrong"
     post sessions_path, params: {
       email: @user.email,
       password: user_password_test
@@ -18,7 +17,6 @@ class AuthFlowIntegrationTest < ActionDispatch::IntegrationTest
   end
 
   test "user cannot login with invalid credentials" do
-    skip "Pre-existing test issue - routes/assertions may be wrong"
     post sessions_path, params: {
       email: @user.email,
       password: "wrongpassword"
@@ -28,7 +26,6 @@ class AuthFlowIntegrationTest < ActionDispatch::IntegrationTest
   end
 
   test "user can logout" do
-    skip "Pre-existing test issue - route/assertion mismatch"
     sign_in(@user)
     delete session_path(@user)
     assert_redirected_to new_session_path
@@ -47,11 +44,10 @@ class AuthFlowIntegrationTest < ActionDispatch::IntegrationTest
   end
 
   test "user registration creates account and family" do
-    skip "Pre-existing test issue - routes/assertions may be wrong"
     assert_difference(["User.count", "Family.count"], 1) do
       post registration_path, params: {
         user: {
-          email: "newuser@example.com",
+          email: "newuser#{SecureRandom.hex(4)}@example.com",
           password: "SecurePass123!",
           password_confirmation: "SecurePass123!",
           first_name: "Test",
