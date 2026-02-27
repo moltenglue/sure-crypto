@@ -11,20 +11,21 @@ class TransactionFlowIntegrationTest < ActionDispatch::IntegrationTest
   end
 
   test "user can create a transaction" do
-    skip "Pre-existing test issue - controller/model mismatch"
     assert_difference("Transaction.count") do
       post transactions_path, params: {
-        transaction: {
+        entry: {
+          account_id: @account.id,
           name: "Grocery Store",
           amount: 50.00,
-          currency_code: "USD",
+          currency: "USD",
           date: Date.today.to_s,
-          category_id: @category.id,
-          account_id: @account.id
+          entryable_attributes: {
+            category_id: @category.id
+          }
         }
       }
     end
-    assert_redirected_to transactions_path
+    assert_redirected_to account_path(@account)
   end
 
   test "user can view transaction list" do
@@ -33,32 +34,32 @@ class TransactionFlowIntegrationTest < ActionDispatch::IntegrationTest
   end
 
   test "user can update a transaction" do
-    skip "Pre-existing test issue - controller/model mismatch"
     transaction = transactions(:empty_one)
+    entry = transaction.entry
     patch transaction_path(transaction), params: {
-      transaction: {
+      entry: {
         name: "Updated Name",
         amount: 75.00
       }
     }
-    assert_redirected_to transactions_path
+    assert_redirected_to account_path(entry.account)
     transaction.reload
     assert_equal "Updated Name", transaction.name
   end
 
   test "user can delete a transaction" do
-    skip "Pre-existing test issue - controller/model mismatch"
     transaction = transactions(:empty_one)
+    entry = transaction.entry
     assert_difference("Transaction.count", -1) do
       delete transaction_path(transaction)
     end
-    assert_redirected_to transactions_path
+    assert_redirected_to account_path(entry.account)
   end
 
   test "transaction creation with invalid data shows errors" do
-    skip "Pre-existing test issue - controller/model mismatch"
     post transactions_path, params: {
-      transaction: {
+      entry: {
+        account_id: @account.id,
         name: "",
         amount: nil
       }
