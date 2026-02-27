@@ -1,7 +1,7 @@
 class RotkiService
-  # Connect directly to Rotki backend API (port 4242) instead of nginx proxy (port 5042)
-  # This avoids nginx breaking connection-based sessions
-  BASE_URL = ENV.fetch("ROTKI_API_URL", "http://localhost:4242")
+  # Try direct backend port 4242 first, fallback to nginx proxy 5042
+  # Port 4242 maintains connection-based sessions, 5042 (nginx) may break them
+  BASE_URL = ENV.fetch("ROTKI_API_URL", "http://localhost:5042")
 
   class AuthenticationError < StandardError; end
   class ConnectionError < StandardError; end
