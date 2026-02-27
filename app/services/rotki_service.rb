@@ -9,7 +9,6 @@ class RotkiService
     @password = password
     @http = nil
     @logged_in = false
-    @session_cookie = nil
   end
 
   def create_user(username, password)
@@ -148,22 +147,28 @@ class RotkiService
   private
 
   def http_connection
-    return @http if @http && @http.started?
+    # Check if we have a valid, started connection
+    if @http && @http.started?
+      Rails.logger.debug "RotkiService: Reusing existing HTTP connection"
+      return @http
+    end
 
+    # Clean up any stale connection
     close_connection if @http
 
     uri = URI.parse(BASE_URL)
-    Rails.logger.info "RotkiService: Creating HTTP connection to #{uri.host}:#{uri.port}"
+    Rails.logger.info "RotkiService: Creating new HTTP connection to #{uri.host}:#{uri.port}"
     
     @http = Net::HTTP.new(uri.host, uri.port)
     @http.use_ssl = uri.scheme == "https"
     @http.open_timeout = 10
     @http.read_timeout = 30
     
-    # Don't use keep_alive since nginx doesn't support it properly
-    # @http.keep_alive_timeout = 30
+    # Important: Enable keep-alive for session persistence
+    @http.keep_alive_timeout = 60
     
     @http.start
+    Rails.logger.info "RotkiService: HTTP connection established"
     @http
   rescue => e
     Rails.logger.error "RotkiService: Failed to create HTTP connection: #{e.message}"
@@ -174,13 +179,13 @@ class RotkiService
     if @http
       begin
         @http.finish if @http.started?
+        Rails.logger.info "RotkiService: HTTP connection closed"
       rescue => e
         Rails.logger.warn "RotkiService: Error closing connection: #{e.message}"
       end
       @http = nil
     end
     @logged_in = false
-    @session_cookie = nil
   end
 
   def get(path)
@@ -220,54 +225,29 @@ class RotkiService
     req["Content-Type"] = "application/json"
     req["Accept"] = "application/json"
     
-    # Send session cookie if we have one
-    if @session_cookie
-      req["Cookie"] = @session_cookie
-      Rails.logger.info "RotkiService: Sending request #{method.upcase} #{path} with session cookie"
-    else
-      Rails.logger.info "RotkiService: Sending request #{method.upcase} #{path} WITHOUT session cookie"
-    end
+    # Rotki uses connection-based sessions (not cookies)
+    # The session is tied to the TCP connection, so we MUST reuse the same connection
+    Rails.logger.debug "RotkiService: #{method.upcase} #{path}"
     
     req.body = body.to_json if body
 
     http = http_connection
     response = http.request(req)
 
-    # Log ALL response headers for debugging
-    Rails.logger.info "RotkiService: Response headers: #{response.to_hash.inspect}"
-    
-    # Capture session cookie from response - check all possible cookie names
-    if response["Set-Cookie"]
-      set_cookie = response["Set-Cookie"]
-      Rails.logger.info "RotkiService: Raw Set-Cookie header: #{set_cookie.inspect}"
-      
-      # Try to find any session cookie - Rotki might use different names
-      # Common names: rotki_session, session, _rotki_session
-      cookie_match = set_cookie.to_s.match(/(?:rotki_session|session)=([^;]+)/i)
-      if cookie_match
-        # Get the actual cookie name from the match
-        cookie_name = set_cookie.to_s.match(/([^=]+)=/)[1]
-        @session_cookie = "#{cookie_name}=#{cookie_match[1]}"
-        Rails.logger.info "RotkiService: Captured session cookie: #{@session_cookie}"
-      else
-        # If we can't parse it, store the whole thing and try using it
-        @session_cookie = set_cookie.to_s.split(';').first.strip
-        Rails.logger.info "RotkiService: Storing full cookie string (unparsed): #{@session_cookie}"
-      end
-    else
-      Rails.logger.info "RotkiService: No Set-Cookie header in response"
-    end
-
     unless response.is_a?(Net::HTTPSuccess)
-      Rails.logger.error "Rotki API error response: #{response.code} - #{response.message} - #{response.body}"
+      Rails.logger.error "Rotki API error: #{response.code} - #{response.message} - #{response.body}"
       
-      # Check for authentication errors
+      # Check for authentication/session errors
       if response.code == "401" || response.code == "403"
         close_connection
         raise AuthenticationError, "Rotki authentication failed: #{response.code} - #{response.message}"
       elsif response.code == "500" && response.body.include?("400 Bad Request")
+        # This typically means the session was lost (connection closed server-side)
         close_connection
-        raise ConnectionError, "Rotki session lost. Error: #{response.body}"
+        raise ConnectionError, "Rotki session lost - connection was closed"
+      elsif response.code == "409"
+        # User already logged in conflict
+        raise "Rotki API error: #{response.code} - #{response.message}"
       end
       
       raise "Rotki API error: #{response.code} - #{response.message}"
@@ -282,8 +262,8 @@ class RotkiService
     close_connection
     raise ConnectionError, "Cannot connect to Rotki at #{BASE_URL}: #{e.message}"
   rescue Errno::EPIPE, Errno::ECONNRESET => e
-    Rails.logger.error "Rotki connection closed: #{e.message}"
+    Rails.logger.error "Rotki connection closed unexpectedly: #{e.message}"
     close_connection
-    raise ConnectionError, "Connection to Rotki was closed."
+    raise ConnectionError, "Connection to Rotki was closed. Please retry."
   end
 end
