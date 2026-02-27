@@ -12,11 +12,13 @@ services:
     image: rotki/rotki:latest
     container_name: sure-rotki
     ports:
-      - "5042:80"
+      - "5042:80"    # nginx proxy (for web UI)
+      - "4242:4242"  # direct backend API (for persistent sessions)
     volumes:
       - rotki-data:/data
     environment:
       - ROTKI_IS_HEADLESS=true
+      - ROTKI_REST_API_PORT=4242
     restart: unless-stopped
     healthcheck:
       test: [ "CMD-SHELL", "curl -f http://localhost/api/1/ping || exit 1" ]
