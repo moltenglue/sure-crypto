@@ -163,7 +163,7 @@ jobs:
 
       - name: Upload test results
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: unit-test-results
           path: test/reports/
@@ -237,7 +237,7 @@ jobs:
 
       - name: Upload test results
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: integration-test-results
           path: test/reports/
@@ -316,7 +316,7 @@ jobs:
           timeout 540 DISABLE_PARALLELIZATION=true bundle exec rails test:system --profile 10 2>&1 | tail -200 || true
 
       - name: Keep screenshots from failed tests
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: system-test-screenshots
@@ -481,7 +481,7 @@ jobs:
           bundle exec brakeman -q -o brakeman-report.json -o brakeman-report.html || true
 
       - name: Upload Brakeman Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: brakeman-security-report
           path: |
@@ -585,7 +585,7 @@ jobs:
           pkill -f "rails server" || true
 
       - name: Upload Performance Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: performance-test-results
           path: |
